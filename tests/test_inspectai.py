@@ -10,6 +10,7 @@ from inspectai import (
     compare_edges,
     compare_images,
     decode_image,
+    detect_changed_regions,
     inspect_images,
 )
 
@@ -23,6 +24,68 @@ def make_reference() -> np.ndarray:
 
 
 class ImageComparisonTests(unittest.TestCase):
+    def test_empty_and_all_zero_masks_have_no_changed_regions(self) -> None:
+        empty = detect_changed_regions(np.zeros((0, 0), dtype=np.uint8))
+        no_changes = detect_changed_regions(np.zeros((40, 50), dtype=np.uint8))
+
+        self.assertEqual(empty["region_count"], 0)
+        self.assertEqual(empty["detected_region_count"], 0)
+        self.assertEqual(no_changes["regions"], [])
+        self.assertEqual(no_changes["filtered_region_count"], 0)
+
+    def test_rectangular_change_returns_expected_bounding_box(self) -> None:
+        mask = np.zeros((80, 100), dtype=np.uint8)
+        mask[20:45, 30:65] = 255
+
+        result = detect_changed_regions(mask)
+
+        self.assertEqual(result["region_count"], 1)
+        self.assertEqual(
+            result["regions"][0],
+            {"x": 30, "y": 20, "width": 35, "height": 25, "area_pixels": 875},
+        )
+
+    def test_separated_changes_return_multiple_deterministically_sorted_regions(self) -> None:
+        mask = np.zeros((100, 120), dtype=np.uint8)
+        mask[10:20, 15:30] = 255
+        mask[50:80, 70:100] = 255
+
+        result = detect_changed_regions(mask)
+
+        self.assertEqual(result["region_count"], 2)
+        self.assertEqual([region["area_pixels"] for region in result["regions"]], [900, 150])
+        self.assertEqual(
+            [(region["x"], region["y"]) for region in result["regions"]],
+            [(70, 50), (15, 10)],
+        )
+
+    def test_minimum_area_filters_tiny_components_and_reports_them(self) -> None:
+        mask = np.zeros((40, 40), dtype=np.uint8)
+        mask[2:4, 2:4] = 255
+        mask[10:15, 12:17] = 255
+
+        result = detect_changed_regions(mask)
+
+        self.assertEqual(result["minimum_area_pixels"], 25)
+        self.assertEqual(result["detected_region_count"], 2)
+        self.assertEqual(result["filtered_region_count"], 1)
+        self.assertEqual(result["region_count"], 1)
+        self.assertEqual(result["regions"][0]["area_pixels"], 25)
+
+    def test_invalid_masks_and_minimum_area_raise_value_error(self) -> None:
+        with self.assertRaisesRegex(ValueError, "two-dimensional"):
+            detect_changed_regions(None)
+        with self.assertRaisesRegex(ValueError, "two-dimensional"):
+            detect_changed_regions(np.zeros((4, 4, 3), dtype=np.uint8))
+        with self.assertRaisesRegex(ValueError, "uint8 binary"):
+            detect_changed_regions(np.zeros((4, 4), dtype=np.int16))
+        invalid_values = np.zeros((4, 4), dtype=np.uint8)
+        invalid_values[1, 1] = 1
+        with self.assertRaisesRegex(ValueError, "0 or 255"):
+            detect_changed_regions(invalid_values)
+        with self.assertRaisesRegex(ValueError, "positive whole number"):
+            detect_changed_regions(np.zeros((4, 4), dtype=np.uint8), minimum_area=0)
+
     def test_center_crop_pair_handles_landscape_and_portrait_without_mutation(self) -> None:
         landscape = np.full((120, 200, 3), 30, dtype=np.uint8)
         portrait = np.full((200, 120, 3), 90, dtype=np.uint8)
@@ -203,12 +266,14 @@ class ImageComparisonTests(unittest.TestCase):
         self.assertFalse(report["images"]["contents_included"])
         self.assertIn("thresholds", report)
         self.assertIn("measurements", report)
+        self.assertIn("changed_regions", report["measurements"])
         self.assertIn("alignment", report)
         self.assertIn("selected_actions", report)
         self.assertIn("warnings", report)
         self.assertNotIn("difference_mask", serialized)
         self.assertNotIn("heatmap", serialized)
         self.assertNotIn("reference_pixels", serialized)
+        self.assertNotIn("annotated_image", serialized)
 
     def test_report_builder_rejects_empty_image_data(self) -> None:
         reference = make_reference()

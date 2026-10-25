@@ -29,6 +29,7 @@ class EdgeComparisonResult:
 class InspectionResult:
     initial_comparison: ComparisonResult
     final_comparison: ComparisonResult
+    changed_regions: dict[str, object]
     independent_comparison: EdgeComparisonResult
     alignment_applied: bool
     alignment_status: str
@@ -139,6 +140,64 @@ def compare_images(
     heatmap = cv2.applyColorMap(difference, cv2.COLORMAP_TURBO)
     heatmap[(difference <= 30) | (valid_mask == 0)] = 0
     return ComparisonResult(changed_percentage, mask, heatmap)
+
+
+def detect_changed_regions(
+    difference_mask: np.ndarray,
+    minimum_area: int = 25,
+) -> dict[str, object]:
+    """Find 8-connected changed pixel regions in a binary uint8 mask.
+
+    Regions smaller than ``minimum_area`` pixels are excluded from ``regions``
+    and counted in ``filtered_region_count``.
+    """
+    if not isinstance(difference_mask, np.ndarray) or difference_mask.ndim != 2:
+        raise ValueError("Difference mask must be a two-dimensional NumPy array.")
+    if difference_mask.dtype != np.uint8:
+        raise ValueError("Difference mask must use uint8 binary values of 0 or 255.")
+    if (
+        isinstance(minimum_area, (bool, np.bool_))
+        or not isinstance(minimum_area, (int, np.integer))
+        or minimum_area < 1
+    ):
+        raise ValueError("Minimum region area must be a positive whole number of pixels.")
+    if difference_mask.size and np.any((difference_mask != 0) & (difference_mask != 255)):
+        raise ValueError("Difference mask must use uint8 binary values of 0 or 255.")
+
+    minimum_area = int(minimum_area)
+    if difference_mask.size == 0:
+        detected_count = 0
+        regions: list[dict[str, int]] = []
+    else:
+        component_count, _, stats, _ = cv2.connectedComponentsWithStats(
+            difference_mask, connectivity=8
+        )
+        detected_count = component_count - 1
+        regions = []
+        for component_index in range(1, component_count):
+            x, y, width, height, area = (
+                int(value) for value in stats[component_index]
+            )
+            if area < minimum_area:
+                continue
+            regions.append(
+                {
+                    "x": x,
+                    "y": y,
+                    "width": width,
+                    "height": height,
+                    "area_pixels": area,
+                }
+            )
+
+    regions.sort(key=lambda region: (-region["area_pixels"], region["y"], region["x"]))
+    return {
+        "regions": regions,
+        "region_count": len(regions),
+        "detected_region_count": detected_count,
+        "filtered_region_count": detected_count - len(regions),
+        "minimum_area_pixels": minimum_area,
+    }
 
 
 def compare_edges(
@@ -329,6 +388,7 @@ def inspect_images(reference: np.ndarray, test: np.ndarray) -> InspectionResult:
     if not alignment_applied:
         final = initial
 
+    changed_regions = detect_changed_regions(final.difference_mask)
     independent_comparison = compare_edges(
         reference, comparison_test, final_valid_mask
     )
@@ -391,6 +451,7 @@ def inspect_images(reference: np.ndarray, test: np.ndarray) -> InspectionResult:
     return InspectionResult(
         initial_comparison=initial,
         final_comparison=final,
+        changed_regions=changed_regions,
         independent_comparison=independent_comparison,
         alignment_applied=alignment_applied,
         alignment_status=alignment_status,
@@ -482,6 +543,7 @@ def build_inspection_report(
                 "Pixel changed percentage and Canny edge similarity measure different properties "
                 "and are not directly comparable. Low edge similarity alone does not establish a defect."
             ),
+            "changed_regions": result.changed_regions,
         },
         "alignment": {
             "method": result.alignment_method,

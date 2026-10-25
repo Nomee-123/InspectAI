@@ -340,8 +340,8 @@ def render_results(payload: dict[str, object]) -> None:
         "Thresholds: pixel change >= 1.00%; edge disagreement >= 10.00%."
     )
 
-    original_tab, mask_tab, heatmap_tab, edge_tab = st.tabs(
-        ["Original Images", "Difference Mask", "Heatmap", "Edge Comparison"]
+    original_tab, mask_tab, heatmap_tab, edge_tab, regions_tab = st.tabs(
+        ["Original Images", "Difference Mask", "Heatmap", "Edge Comparison", "Changed Regions"]
     )
     with original_tab:
         reference_column, test_column = st.columns(2)
@@ -381,6 +381,43 @@ def render_results(payload: dict[str, object]) -> None:
             '<div class="disclaimer">Similarity and disagreement describe the same Canny edge overlap from opposite directions. They are not directly comparable to the pixel changed percentage; low similarity alone does not establish a defect.</div>',
             unsafe_allow_html=True,
         )
+    with regions_tab:
+        region_summary = result.changed_regions
+        region_count_column, filtered_column, threshold_column = st.columns(3)
+        region_count_column.metric("Regions shown", region_summary["region_count"])
+        filtered_column.metric("Small regions filtered", region_summary["filtered_region_count"])
+        threshold_column.metric("Minimum area", f"{region_summary['minimum_area_pixels']} px")
+        st.caption(
+            "These boxes localize connected changed pixels in the final difference mask. "
+            "They are image-difference regions, not confirmed defects."
+        )
+        if region_summary["regions"]:
+            annotated_image = comparison_test.copy()
+            for region_index, region in enumerate(region_summary["regions"], start=1):
+                x = region["x"]
+                y = region["y"]
+                right = x + region["width"] - 1
+                bottom = y + region["height"] - 1
+                cv2.rectangle(annotated_image, (x, y), (right, bottom), (64, 200, 232), 2)
+                cv2.putText(
+                    annotated_image,
+                    f"R{region_index}",
+                    (x, max(16, y - 6)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (64, 200, 232),
+                    1,
+                    cv2.LINE_AA,
+                )
+            st.image(cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB), width="stretch")
+            st.dataframe(region_summary["regions"], hide_index=True, width="stretch")
+        elif region_summary["detected_region_count"]:
+            st.info(
+                f"No regions meet the {region_summary['minimum_area_pixels']}-pixel minimum. "
+                f"{region_summary['filtered_region_count']} smaller connected component(s) were filtered."
+            )
+        else:
+            st.info("No changed regions were detected in the final difference mask.")
 
     st.markdown("### Agent activity")
     with st.container(border=True):

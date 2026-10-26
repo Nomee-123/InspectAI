@@ -166,19 +166,17 @@ class ImageComparisonTests(unittest.TestCase):
         self.assertGreater(result.initial_comparison.changed_percentage, 5.0)
         self.assertLess(result.final_comparison.changed_percentage, 1.0)
 
-    def test_rotation_is_not_claimed_as_corrected(self) -> None:
+    def test_small_rotation_is_aligned_and_recompared(self) -> None:
         reference = make_reference()
         rotation = cv2.getRotationMatrix2D((80, 64), 3, 1)
         rotated = cv2.warpAffine(reference, rotation, (160, 128))
 
         result = inspect_images(reference, rotated)
 
-        self.assertFalse(result.alignment_applied)
-        self.assertEqual(result.alignment_status, "rejected")
-        self.assertEqual(
-            result.final_comparison.changed_percentage,
-            result.initial_comparison.changed_percentage,
-        )
+        self.assertTrue(result.alignment_applied)
+        self.assertEqual(result.alignment_status, "applied")
+        self.assertAlmostEqual(result.estimated_rotation_degrees, 3.0, delta=0.5)
+        self.assertLess(result.final_comparison.changed_percentage, 1.0)
 
     def test_blank_images_are_treated_as_ambiguous(self) -> None:
         blank = np.zeros((128, 160, 3), dtype=np.uint8)
@@ -222,17 +220,21 @@ class ImageComparisonTests(unittest.TestCase):
         self.assertTrue(report["measurements"]["indication_agreement"]["indications_agree"])
         self.assertIn("Low edge similarity alone", report["measurements"]["measurement_note"])
 
-    def test_brightness_change_is_not_mistaken_for_translation(self) -> None:
+    def test_brightness_change_is_normalized_instead_of_misaligned(self) -> None:
         reference = make_reference()
         brighter = cv2.convertScaleAbs(reference, alpha=1.0, beta=45)
 
         result = inspect_images(reference, brighter)
 
         self.assertFalse(result.alignment_applied)
-        self.assertGreater(result.final_comparison.changed_percentage, 50.0)
+        self.assertEqual(result.alignment_status, "not_needed")
+        self.assertGreater(result.initial_comparison.changed_percentage, 50.0)
+        self.assertLess(result.final_comparison.changed_percentage, 5.0)
+        self.assertIsNotNone(result.photometric)
+        self.assertTrue(result.photometric.applied)
         self.assertEqual(result.independent_comparison.status, "measured")
         self.assertGreater(result.independent_comparison.edge_similarity_percentage, 90.0)
-        self.assertTrue(result.method_disagreement)
+        self.assertFalse(result.method_disagreement)
 
     def test_dimension_mismatch_is_resized_before_comparison(self) -> None:
         reference = make_reference()

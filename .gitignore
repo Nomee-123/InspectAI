@@ -12,4 +12,3 @@ __pycache__/
 
 # Test and tool caches
 .pytest_cache/
-.streamlit/

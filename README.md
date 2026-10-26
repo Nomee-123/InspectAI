@@ -100,25 +100,51 @@ python -m streamlit run app.py
 
 Streamlit prints a local URL, usually `http://localhost:8501`.
 
-1. Upload a reference image and a test image.
+1. Upload a reference image and a test image, or load a generated demo pair from
+   the sidebar. Both uploads take precedence over a loaded demo pair.
 2. Enable center-cropped copies if the images have different aspect ratios.
 3. Select **Run inspection**.
-4. Review the four result tabs:
-   - **Overview** — HUD measurements, final aligned test, difference heatmap,
-     and change-region table.
-   - **Alignment** — every candidate step, originals vs. scrubbed warp,
-     overlay opacity, transform matrix, feature matches, and candidate review.
-   - **Comparison methods** — Lab difference, Canny edges, SSIM, and
-     photometric normalization.
-   - **Evidence & report** — agent trace, function trace, warnings,
-     limitations, and a downloadable JSON report.
+4. Review the three result tabs:
+   - **REGISTER** — step timeline, Prev/Next/Play, scrubber, lock-on markers,
+     blend/checker/difference/edge/A-B/swipe overlays, an OpenCV preview toggle,
+     LOCKED/AMBIGUOUS/REJECTED badges, metrics, reasons and a residual chart.
+   - **ANALYZE** — reference, aligned test, difference heatmap, change mask,
+     interactive change-region boxes, region tags and the reference/aligned wipe.
+   - **VERIFY** — per-method indications (Lab ΔE, Canny, SSIM), the agent feed,
+     warnings, the function trace, the JSON preview and a download button.
+5. Use **Reduce motion** in the sidebar to stop ambient CSS animation, particles,
+   boot playback, registration playback and gauge count-up. The **LIMITATIONS**
+   expander is always available.
+
+The page is a thin Streamlit shell around `inspectai` (pipeline) and `ui`
+(presentation). Interactive widgets are sandboxed HTML/JS iframes created with
+`st.iframe`; ambient CSS lives in `ui/theme.py`.
+
+### Demo pairs
+
+`samples/make_samples.py` writes deterministic, procedural PNG pairs plus
+`samples/manifest.json`: shifted translation, 15°/90°/180° rotations, brighter
+exposure, perspective warp, a pasted patch, and a periodic grid shifted by one
+period. The grid pair is designed to stay **alignment ambiguous**; no sample
+result is scripted. The sidebar buttons load a pair and run the real pipeline.
+
+### Motion and accessibility
+
+Ambient grid/glow/scanlines, the rotating reticle, pipeline nodes, radar, panel
+borders, gauge count-up, image scan lines, lock-on markers, tab/step transitions
+and region tags are animated mostly with transforms and opacity. The particle
+canvas caps device-pixel-ratio at 2, pauses when the tab is hidden and falls back
+to a static field under reduced motion. A/B flicker is 2 Hz. Animated motion is
+disabled by the sidebar toggle and by `prefers-reduced-motion`. Focus rings,
+SVG titles/`aria-label`s and keyboard controls are present. `ui_checklist.md`
+records file/line evidence for every motion item.
 
 ### OpenCV logo
 
 The header expects a **user-supplied** logo at `assets/opencv_logo.png`.
-InspectAI does not draw, trace, or regenerate the OpenCV logo. If the file is
-absent, the header shows the text badge **BUILT WITH OpenCV** and prints a
-one-time warning in the Streamlit console. See `assets/README.md`.
+InspectAI does not draw, trace, regenerate, or hotlink the OpenCV logo. If the
+file is absent, the header shows the text badge **BUILT WITH OpenCV** and prints
+a one-time warning in the Streamlit console. See `assets/README.md`.
 
 ## Run the tests
 
@@ -130,7 +156,9 @@ The suite covers legacy compatibility plus the evidence-agent behaviours:
 rotation and 45° alignment, combined rotation/scale/shift, perspective warps,
 patch-only change localization, lighting normalization, colour-only change,
 repetitive-texture ambiguity, blank inputs, method disagreement, report schema
-2, required agent-trace fields, function tracing, and a forbidden-claim guard.
+2, progress-event ordering, JSON-safe alignment steps without image data,
+required agent-trace fields, function tracing, generated samples, and forbidden
+UI wording.
 
 ## Run the benchmark
 
@@ -189,7 +217,7 @@ image contents.
 ## Project layout
 
 ```text
-app.py                       Streamlit HUD and inspection inspectors
+app.py                       Thin Streamlit shell: uploads, run control, tabs
 inspectai/                   Streamlit-free inspection core
   agent.py                   Loop, status decisions, report evidence
   align.py                   Orientation and alignment ladder
@@ -197,7 +225,14 @@ inspectai/                   Streamlit-free inspection core
   regions.py                 Mask cleanup and component localization
   report.py                  JSON schema version 2
   types.py                   Dataclasses and transform convention
+ui/
+  theme.py                   Ambient VISION CORE CSS, focus rings, breakpoints
+  components.py              Hero, pipeline, gauges, panels, REGISTER, report
+  pipeline.py                Cached display payload and demo loading
+  templates/                 HTML/JS widgets embedded with st.iframe
+samples/make_samples.py      Deterministic demo-pair generator
 tests/                       Unit and behavioural regression tests
 benchmarks/run_benchmark.py  Deterministic synthetic benchmark
 assets/README.md             User-supplied logo instructions
+ui_checklist.md              Motion checklist with file/line evidence
 ```

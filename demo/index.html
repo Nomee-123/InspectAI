@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InspectAI · Evidence Explorer</title>
+<meta name="description" content="Interactive replay of real InspectAI runs: alignment ladder, change analysis and the agent's evidence trail.">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23050b18'/%3E%3Cpath d='M16 4l10 12-10 12L6 16z' fill='none' stroke='%2300e5ff' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%2300e5ff'/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="InspectAI demo home">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <span class="brand-text">
+        <b>InspectAI</b>
+        <small>VISION CORE · EVIDENCE EXPLORER</small>
+      </span>
+    </a>
+    <div class="topbar-meta">
+      <span class="pill pill-live"><span class="dot"></span>REAL PIPELINE OUTPUT</span>
+      <span id="build-meta" class="mono dim">loading…</span>
+    </div>
+  </header>
+
+  <aside class="rail" aria-label="Demo cases">
+    <div class="rail-head">
+      <span>DEMO CASES</span>
+      <span id="case-count" class="mono dim">—</span>
+    </div>
+    <div id="case-list" class="case-list"></div>
+    <div class="rail-note">
+      <p>Each case is generated procedurally, then measured by the real
+        <code>inspectai</code> pipeline. No result is scripted.</p>
+      <p><a href="https://github.com/Nomee-123/InspectAI#readme">README</a> ·
+        <a href="https://github.com/Nomee-123/InspectAI/blob/main/app.py">Streamlit app</a> ·
+        <a href="https://github.com/Nomee-123/InspectAI/blob/main/inspectai/agent.py">core loop</a></p>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <div id="load-error" class="load-error" hidden>
+      <h1>Demo data is missing</h1>
+      <p>Run <code>python demo/build_demo.py</code> from the repository root, then reload this page.</p>
+    </div>
+
+    <div id="workspace" hidden>
+      <section class="case-head">
+        <div class="case-title">
+          <span id="case-index" class="mono dim">—</span>
+          <h1 id="case-name">—</h1>
+          <p id="case-expectation" class="muted"></p>
+          <div id="case-chips" class="chips"></div>
+        </div>
+        <div id="case-verdict" class="verdict">
+          <span id="verdict-badge" class="badge">—</span>
+          <div class="verdict-number"><span id="verdict-value">—</span><span class="unit">%</span></div>
+          <div class="verdict-caption">measured changed pixels</div>
+          <div id="verdict-sub" class="mono dim"></div>
+        </div>
+      </section>
+
+      <nav class="tabs" role="tablist" aria-label="Result views">
+        <button class="tab" role="tab" id="tab-overview" aria-controls="panel-overview" data-tab="overview">
+          <span class="tab-index">01</span> OVERVIEW
+        </button>
+        <button class="tab" role="tab" id="tab-register" aria-controls="panel-register" data-tab="register">
+          <span class="tab-index">02</span> REGISTER
+        </button>
+        <button class="tab" role="tab" id="tab-analyze" aria-controls="panel-analyze" data-tab="analyze">
+          <span class="tab-index">03</span> ANALYZE
+        </button>
+        <button class="tab" role="tab" id="tab-verify" aria-controls="panel-verify" data-tab="verify">
+          <span class="tab-index">04</span> VERIFY
+        </button>
+      </nav>
+
+      <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
+        <div class="stat-grid" id="overview-stats"></div>
+        <div class="split">
+          <article class="card">
+            <h2>What the pipeline decided</h2>
+            <p id="overview-story" class="story"></p>
+            <div id="overview-metrics" class="kv-grid"></div>
+          </article>
+          <article class="card">
+            <h2>Decision ledger</h2>
+            <p class="card-sub">Every automatic action, in order. Ambiguous and rejected paths stay visible.</p>
+            <ol id="overview-decisions" class="ledger"></ol>
+          </article>
+        </div>
+        <article class="card">
+          <h2>Recorded evidence</h2>
+          <ul id="overview-evidence" class="evidence-list"></ul>
+          <p class="footnote">Lab ΔE, Canny edge overlap and SSIM are heuristic comparison signals, not calibrated
+            probabilities. A change region is not a defect verdict.</p>
+        </article>
+      </section>
+
+      <section id="panel-register" class="panel" role="tabpanel" aria-labelledby="tab-register" hidden>
+        <div class="register-layout">
+          <div class="step-rail">
+            <div class="rail-head"><span>ALIGNMENT LADDER</span><span id="step-count" class="mono dim"></span></div>
+            <div id="step-list" class="step-list" role="listbox" aria-label="Alignment steps"></div>
+            <p class="hint">Use <kbd>←</kbd> <kbd>→</kbd> to walk the ladder.</p>
+          </div>
+          <div class="register-view">
+            <div class="viewer-head">
+              <div>
+                <span id="step-kicker" class="mono dim">STEP 00</span>
+                <h2 id="step-name">—</h2>
+              </div>
+              <span id="step-badge" class="badge">—</span>
+            </div>
+            <div class="stage stage-register">
+              <img id="step-image" alt="Recorded preview of the selected alignment step">
+              <div id="step-image-empty" class="stage-empty" hidden>No preview recorded for this step.</div>
+              <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+              <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+            </div>
+            <div class="register-controls">
+              <button id="step-prev" class="btn" type="button">← PREV</button>
+              <button id="step-play" class="btn btn-accent" type="button">▶ PLAY</button>
+              <button id="step-next" class="btn" type="button">NEXT →</button>
+              <input id="step-range" class="range" type="range" min="0" max="1" step="1" value="0"
+                     aria-label="Alignment step">
+              <output id="step-range-out" class="mono dim"></output>
+            </div>
+            <p id="step-reason" class="reason"></p>
+            <div class="split">
+              <article class="card card-flat">
+                <h3>Step facts</h3>
+                <div id="step-facts" class="kv-grid compact"></div>
+              </article>
+              <article class="card card-flat">
+                <h3>Transform matrix <span class="mono dim">canvas → source</span></h3>
+                <div id="step-matrix" class="matrix" aria-label="3 by 3 transform matrix"></div>
+                <p class="footnote">Warped with <code>cv2.warpPerspective</code> /
+                  <code>WARP_INVERSE_MAP</code> semantics. Rejected steps keep their matrix for audit.</p>
+              </article>
+            </div>
+            <article class="card card-flat">
+              <h3>Step metrics</h3>
+              <div id="step-metrics" class="kv-grid compact"></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-analyze" class="panel" role="tabpanel" aria-labelledby="tab-analyze" hidden>
+        <div class="analyze-layout">
+          <div class="analyze-main">
+            <div class="viewer-head">
+              <div>
+                <span class="mono dim">REGISTERED COMPARISON</span>
+                <h2 id="layer-name">ALIGNED TEST</h2>
+              </div>
+              <div id="layer-tabs" class="layer-tabs" role="group" aria-label="Image layer">
+                <button class="chip-btn is-active" type="button" data-layer="aligned">ALIGNED</button>
+                <button class="chip-btn" type="button" data-layer="heatmap">ΔE HEATMAP</button>
+                <button class="chip-btn" type="button" data-layer="mask">CHANGE MASK</button>
+                <button class="chip-btn" type="button" data-layer="regions">REGIONS</button>
+              </div>
+            </div>
+            <div id="stage" class="stage">
+              <img id="stage-layer" alt="Selected analysis layer">
+              <img id="stage-ref" class="layer-ref" alt="Reference image">
+              <svg id="stage-boxes" class="boxes" aria-hidden="true"></svg>
+              <div id="stage-empty" class="stage-empty" hidden>No change regions survived the reporting gate.</div>
+              <div class="wipe-line" id="wipe-line"><span></span></div>
+              <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+              <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+              <div class="stage-caption">
+                <span id="stage-label-left">REFERENCE</span>
+                <span id="stage-label-right">ALIGNED TEST</span>
+              </div>
+            </div>
+            <div class="register-controls">
+              <label class="wipe-label" for="wipe">REFERENCE</label>
+              <input id="wipe" class="range" type="range" min="0" max="100" step="1" value="50"
+                     aria-label="Wipe between reference and selected layer">
+              <span class="mono dim" id="wipe-out">50%</span>
+              <label class="wipe-label" for="wipe" id="wipe-label-right">LAYER</label>
+            </div>
+            <p class="footnote" id="layer-note"></p>
+          </div>
+          <aside class="analyze-side">
+            <article class="card card-flat">
+              <h3>Method agreement</h3>
+              <div id="method-pills" class="method-pills"></div>
+              <p id="method-note" class="footnote"></p>
+            </article>
+            <article class="card card-flat">
+              <h3>Change regions <span id="region-count" class="mono dim"></span></h3>
+              <div id="region-list" class="region-list"></div>
+              <p id="region-detail" class="region-detail"></p>
+              <p class="footnote">Boxed by <code>cv2.connectedComponentsWithStats</code> after the adaptive
+                Lab threshold and 3×3 open/close cleanup. Bounds are pixels in the reference canvas.</p>
+            </article>
+          </aside>
+        </div>
+      </section>
+
+      <section id="panel-verify" class="panel" role="tabpanel" aria-labelledby="tab-verify" hidden>
+        <div class="method-grid" id="verify-methods"></div>
+        <div id="disagreement" class="alert" hidden></div>
+
+        <div class="split">
+          <article class="card">
+            <h2>Agent trace</h2>
+            <p class="card-sub">Action, evidence, outcome and uncertainty for every iteration.</p>
+            <ol id="agent-trace" class="trace"></ol>
+          </article>
+          <div class="stack">
+            <article class="card card-flat">
+              <h3>Decisions</h3>
+              <ul id="verify-decisions" class="plain-list"></ul>
+            </article>
+            <article class="card card-flat">
+              <h3>Uncertainty warnings</h3>
+              <ul id="verify-warnings" class="plain-list warn"></ul>
+            </article>
+            <article class="card card-flat">
+              <h3>Limitations</h3>
+              <ul id="verify-limitations" class="plain-list"></ul>
+            </article>
+          </div>
+        </div>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>Function trace</h2>
+              <p class="card-sub">The OpenCV / NumPy calls that actually ran, per stage.</p>
+            </div>
+            <div class="card-actions">
+              <a class="btn btn-accent" id="report-download" download>↓ DOWNLOAD JSON</a>
+              <a class="btn" id="report-open" target="_blank" rel="noopener">OPEN</a>
+            </div>
+          </div>
+          <div id="function-trace" class="trace-table"></div>
+          <p class="footnote">Schema version 2. The report contains measurements and metadata; image pixels are
+            never embedded.</p>
+        </article>
+      </section>
+
+      <footer class="footer">
+        <div>
+          <b>InspectAI</b> measures visual change; it does not certify defects.
+          <span class="dim">Built with Python, OpenCV and NumPy.</span>
+        </div>
+        <div class="mono dim" id="footer-meta"></div>
+      </footer>
+    </div>
+  </main>
+</div>
+<noscript>
+  <p class="noscript">This demo needs JavaScript. The underlying evidence is available as JSON in
+    <code>demo/evidence/</code>.</p>
+</noscript>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

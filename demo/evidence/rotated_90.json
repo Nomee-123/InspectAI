@@ -1,0 +1,821 @@
+{
+  "schema_version": 2,
+  "generated_at_utc": "2026-10-26T16:30:27.250590+00:00",
+  "images": {
+    "reference_dimensions": {
+      "width": 640,
+      "height": 480
+    },
+    "test_dimensions": {
+      "width": 480,
+      "height": 640
+    },
+    "contents_included": false
+  },
+  "thresholds": {
+    "lab_delta_initial": 2.5,
+    "lab_delta_final": 2.5,
+    "lab_noise_mad_final": 0.0,
+    "pixel_change_indication_percentage": 1.0,
+    "region_change_indication": "largest region >= adaptive minimum area and >= 0.05% of valid pixels with mean Lab contrast >= max(8, 2.5 * threshold)",
+    "minimum_region_area_pixels": 16,
+    "minimum_component_contrast": 6.0,
+    "region_component_filter": "components below 16 px or mean Lab difference below 6.00 are excluded",
+    "morphological_cleanup": "3x3 open, then 3x3 close",
+    "canny_low_threshold": 20,
+    "canny_high_threshold": 62,
+    "canny_rule": "low = max(10, 0.4 * median intensity); high = max(low + 20, 1.2 * median intensity)",
+    "edge_matching_tolerance_pixels": 2,
+    "edge_disagreement_indication_percentage": 10.0,
+    "minimum_edge_pixels_per_image": 4,
+    "ssim_similarity_threshold": 0.7,
+    "ssim_change_indication_percentage": 0.5,
+    "phase_correlation_minimum_response": 0.2,
+    "phase_peak_ratio_minimum": 2.0,
+    "minimum_alignment_dimension_pixels": 16,
+    "minimum_grayscale_texture_stddev": 1.0,
+    "minimum_translation_pixels": 0.5,
+    "feature_minimum_inliers": 8,
+    "feature_minimum_inlier_ratio": 0.35,
+    "feature_minimum_hull_fraction": 0.12,
+    "minimum_alignment_ncc": 0.8,
+    "alignment_ncc_gain_rule": "minimum gain = min(0.015 + 0.01 * model_complexity, max(0.0005, 0.25 * (1 - current_ncc)))",
+    "minimum_overlap_fraction": 0.35,
+    "photometric_minimum_relative_improvement": 0.08,
+    "cross_check_agreement_pixels": 2.0,
+    "cross_check_disagreement_pixels": 5.0,
+    "action_budget": 4
+  },
+  "measurements": {
+    "pixel_difference": {
+      "initial_changed_percentage": 0.0,
+      "initial_changed_pixel_count": 0,
+      "final_changed_percentage": 0.0,
+      "final_changed_pixel_count": 0,
+      "change_indicated": false,
+      "global_percentage_indicated": false,
+      "region_indicated": false,
+      "largest_region_area_pixels": 0,
+      "largest_region_mean_lab_contrast": 0.0,
+      "valid_pixels": 307200,
+      "filtered_component_count": 0,
+      "filtered_pixel_count": 0
+    },
+    "lab_difference": {
+      "description": "CIE-Lab Euclidean difference (\u0394E-style), colour-aware.",
+      "threshold": 2.5,
+      "noise_median": 0.0,
+      "noise_mad": 0.0
+    },
+    "edge_comparison": {
+      "status": "measured",
+      "similarity_percentage": 100.0,
+      "disagreement_percentage": 0.0,
+      "reference_edge_pixels": 11772,
+      "test_edge_pixels": 11772,
+      "change_indicated": false
+    },
+    "ssim_comparison": {
+      "status": "measured",
+      "mean_ssim": 1.0,
+      "changed_percentage": 0.0,
+      "threshold": 0.7,
+      "change_indicated": false
+    },
+    "photometric_normalization": {
+      "applied": false,
+      "status": "skipped",
+      "reason": "The overlap residual is already close to zero; photometric correction is unnecessary.",
+      "model": "gain_offset_plane",
+      "residual_before": 0.0,
+      "residual_after": 0.0,
+      "improvement_relative": 0.0,
+      "channel_gain": [],
+      "channel_offset": [],
+      "channel_gradient": []
+    },
+    "method_states": {
+      "lab_difference_change_indicated": false,
+      "canny_change_indicated": false,
+      "ssim_change_indicated": false
+    },
+    "methods_disagree": false,
+    "indication_agreement": {
+      "summary": "neither_indicates_change",
+      "pixel_change_indicated": false,
+      "edge_change_indicated": false,
+      "indications_agree": true
+    },
+    "measurement_note": "Lab difference, Canny edge overlap and SSIM measure different visual properties. They are heuristic comparison signals, not calibrated defect probabilities; Low edge similarity alone or low SSIM alone does not establish a defect.",
+    "changed_regions": {
+      "regions": [],
+      "region_count": 0,
+      "detected_region_count": 0,
+      "filtered_region_count": 0,
+      "minimum_area_pixels": 16
+    }
+  },
+  "alignment": {
+    "method": "orientation",
+    "status": "applied",
+    "applied": true,
+    "confidence": "single_method",
+    "estimated_shift_pixels": {
+      "x": 0.0,
+      "y": 479.0
+    },
+    "estimated_rotation_degrees": -90.0,
+    "estimated_scale": 1.0,
+    "response": 1.0000000017785196,
+    "overlap_fraction": 1.0,
+    "test_image_resized": false,
+    "final_matrix": [
+      [
+        0.0,
+        -1.0,
+        479.0
+      ],
+      [
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "steps": [
+      {
+        "index": 0,
+        "name": "Original",
+        "model": "none",
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "status": "accepted",
+        "reason": "Original test image (480x640).",
+        "metrics": {
+          "width": 480,
+          "height": 640
+        },
+        "keypoints_ref": null,
+        "keypoints_test": null,
+        "keypoint_format": [
+          "x",
+          "y",
+          "inlier"
+        ]
+      },
+      {
+        "index": 1,
+        "name": "Orientation fix",
+        "model": "orientation",
+        "matrix": [
+          [
+            0.0,
+            -1.0,
+            479.0
+          ],
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "status": "accepted",
+        "reason": "The 270-degree clockwise orientation scored 1.000, ahead of the runner-up by 0.881; the test image was rotated to match the reference.",
+        "metrics": {
+          "score": 1.0,
+          "runner_up_score": 0.11923376520566109,
+          "margin": 0.8807662347943389,
+          "clockwise_degrees": 270
+        },
+        "keypoints_ref": null,
+        "keypoints_test": null,
+        "keypoint_format": [
+          "x",
+          "y",
+          "inlier"
+        ]
+      },
+      {
+        "index": 2,
+        "name": "Orientation runner-up",
+        "model": "orientation",
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "status": "rejected",
+        "reason": "Runner-up orientation 0 degrees scored 0.119, below the selected 1.000.",
+        "metrics": {
+          "score": 0.11923376520566109,
+          "runner_up_score": 1.0,
+          "margin": 0.8807662347943389
+        },
+        "keypoints_ref": null,
+        "keypoints_test": null,
+        "keypoint_format": [
+          "x",
+          "y",
+          "inlier"
+        ]
+      },
+      {
+        "index": 3,
+        "name": "Coarse: phase correlation",
+        "model": "translation",
+        "matrix": [
+          [
+            0.0,
+            -1.0,
+            479.0000000000002
+          ],
+          [
+            1.0,
+            0.0,
+            -1.1880274541908875e-11
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "status": "skipped",
+        "reason": "Estimated shift 0.00 px is below the 0.5 px correction threshold; no correction was needed.",
+        "metrics": {
+          "residual_normalized": 0.0,
+          "residual_raw": 0.0,
+          "ncc": 1.0,
+          "overlap_fraction": 1.0,
+          "valid_pixels": 307200,
+          "texture_mad": 10.378205655670165,
+          "shift_x": -1.1880274541908875e-11,
+          "shift_y": -1.9895196601282805e-13,
+          "response": 1.0000000017785196,
+          "peak_ratio": 125794304.32332055,
+          "opencv_functions": [
+            "cv2.createHanningWindow",
+            "cv2.phaseCorrelate",
+            "np.fft.fft2",
+            "np.fft.ifft2"
+          ]
+        },
+        "keypoints_ref": null,
+        "keypoints_test": null,
+        "keypoint_format": [
+          "x",
+          "y",
+          "inlier"
+        ]
+      },
+      {
+        "index": 4,
+        "name": "Photometric normalization",
+        "model": "none",
+        "matrix": [
+          [
+            0.0,
+            -1.0,
+            479.0
+          ],
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "status": "skipped",
+        "reason": "The overlap residual is already close to zero; photometric correction is unnecessary.",
+        "metrics": {
+          "residual_before": 0.0,
+          "residual_after": 0.0,
+          "improvement_relative": 0.0
+        },
+        "keypoints_ref": null,
+        "keypoints_test": null,
+        "keypoint_format": [
+          "x",
+          "y",
+          "inlier"
+        ]
+      },
+      {
+        "index": 5,
+        "name": "Final",
+        "model": "none",
+        "matrix": [
+          [
+            0.0,
+            -1.0,
+            479.0
+          ],
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "status": "accepted",
+        "reason": "Final aligned test image used for the reported comparison.",
+        "metrics": {
+          "ncc": 1.0,
+          "residual_normalized": 0.0,
+          "overlap_fraction": 1.0,
+          "changed_percentage": 0.0,
+          "region_count": 0
+        },
+        "keypoints_ref": null,
+        "keypoints_test": null,
+        "keypoint_format": [
+          "x",
+          "y",
+          "inlier"
+        ]
+      }
+    ]
+  },
+  "alignment_steps": [
+    {
+      "index": 0,
+      "name": "Original",
+      "model": "none",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "status": "accepted",
+      "reason": "Original test image (480x640).",
+      "metrics": {
+        "width": 480,
+        "height": 640
+      },
+      "keypoints_ref": null,
+      "keypoints_test": null,
+      "keypoint_format": [
+        "x",
+        "y",
+        "inlier"
+      ]
+    },
+    {
+      "index": 1,
+      "name": "Orientation fix",
+      "model": "orientation",
+      "matrix": [
+        [
+          0.0,
+          -1.0,
+          479.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "status": "accepted",
+      "reason": "The 270-degree clockwise orientation scored 1.000, ahead of the runner-up by 0.881; the test image was rotated to match the reference.",
+      "metrics": {
+        "score": 1.0,
+        "runner_up_score": 0.11923376520566109,
+        "margin": 0.8807662347943389,
+        "clockwise_degrees": 270
+      },
+      "keypoints_ref": null,
+      "keypoints_test": null,
+      "keypoint_format": [
+        "x",
+        "y",
+        "inlier"
+      ]
+    },
+    {
+      "index": 2,
+      "name": "Orientation runner-up",
+      "model": "orientation",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "status": "rejected",
+      "reason": "Runner-up orientation 0 degrees scored 0.119, below the selected 1.000.",
+      "metrics": {
+        "score": 0.11923376520566109,
+        "runner_up_score": 1.0,
+        "margin": 0.8807662347943389
+      },
+      "keypoints_ref": null,
+      "keypoints_test": null,
+      "keypoint_format": [
+        "x",
+        "y",
+        "inlier"
+      ]
+    },
+    {
+      "index": 3,
+      "name": "Coarse: phase correlation",
+      "model": "translation",
+      "matrix": [
+        [
+          0.0,
+          -1.0,
+          479.0000000000002
+        ],
+        [
+          1.0,
+          0.0,
+          -1.1880274541908875e-11
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "status": "skipped",
+      "reason": "Estimated shift 0.00 px is below the 0.5 px correction threshold; no correction was needed.",
+      "metrics": {
+        "residual_normalized": 0.0,
+        "residual_raw": 0.0,
+        "ncc": 1.0,
+        "overlap_fraction": 1.0,
+        "valid_pixels": 307200,
+        "texture_mad": 10.378205655670165,
+        "shift_x": -1.1880274541908875e-11,
+        "shift_y": -1.9895196601282805e-13,
+        "response": 1.0000000017785196,
+        "peak_ratio": 125794304.32332055,
+        "opencv_functions": [
+          "cv2.createHanningWindow",
+          "cv2.phaseCorrelate",
+          "np.fft.fft2",
+          "np.fft.ifft2"
+        ]
+      },
+      "keypoints_ref": null,
+      "keypoints_test": null,
+      "keypoint_format": [
+        "x",
+        "y",
+        "inlier"
+      ]
+    },
+    {
+      "index": 4,
+      "name": "Photometric normalization",
+      "model": "none",
+      "matrix": [
+        [
+          0.0,
+          -1.0,
+          479.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "status": "skipped",
+      "reason": "The overlap residual is already close to zero; photometric correction is unnecessary.",
+      "metrics": {
+        "residual_before": 0.0,
+        "residual_after": 0.0,
+        "improvement_relative": 0.0
+      },
+      "keypoints_ref": null,
+      "keypoints_test": null,
+      "keypoint_format": [
+        "x",
+        "y",
+        "inlier"
+      ]
+    },
+    {
+      "index": 5,
+      "name": "Final",
+      "model": "none",
+      "matrix": [
+        [
+          0.0,
+          -1.0,
+          479.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "status": "accepted",
+      "reason": "Final aligned test image used for the reported comparison.",
+      "metrics": {
+        "ncc": 1.0,
+        "residual_normalized": 0.0,
+        "overlap_fraction": 1.0,
+        "changed_percentage": 0.0,
+        "region_count": 0
+      },
+      "keypoints_ref": null,
+      "keypoints_test": null,
+      "keypoint_format": [
+        "x",
+        "y",
+        "inlier"
+      ]
+    }
+  ],
+  "agent": {
+    "iterations": [
+      {
+        "index": 0,
+        "action": "fix_orientation",
+        "evidence": [
+          "The 270-degree clockwise orientation scored 1.000, ahead of the runner-up by 0.881; the test image was rotated to match the reference."
+        ],
+        "outcome": "applied",
+        "uncertainty": "Orientation scoring only tests multiples of 90 degrees; arbitrary rotation is handled later by the alignment ladder.",
+        "metrics": {
+          "best_degrees": 270,
+          "best_score": 1.0,
+          "margin": 0.8807662347943389
+        }
+      },
+      {
+        "index": 1,
+        "action": "estimate_translation",
+        "evidence": [
+          "Phase correlation estimated a translation of (-0.00, -0.00) px with response 1.000 and peak-to-second-peak ratio 125794304.32.",
+          "Estimated shift 0.00 px is below the 0.5 px correction threshold; no correction was needed."
+        ],
+        "outcome": "skipped",
+        "uncertainty": "No translation correction was applied.",
+        "metrics": {
+          "residual_normalized": 0.0,
+          "residual_raw": 0.0,
+          "ncc": 1.0,
+          "overlap_fraction": 1.0,
+          "valid_pixels": 307200,
+          "texture_mad": 10.378205655670165,
+          "shift_x": -1.1880274541908875e-11,
+          "shift_y": -1.9895196601282805e-13,
+          "response": 1.0000000017785196,
+          "peak_ratio": 125794304.32332055,
+          "opencv_functions": [
+            "cv2.createHanningWindow",
+            "cv2.phaseCorrelate",
+            "np.fft.fft2",
+            "np.fft.ifft2"
+          ]
+        }
+      },
+      {
+        "index": 2,
+        "action": "normalize_photometry",
+        "evidence": [
+          "The overlap residual is already close to zero; photometric correction is unnecessary.",
+          "Final photometric check after residual class 'no_clear_residual'."
+        ],
+        "outcome": "skipped",
+        "uncertainty": "No lighting correction was applied.",
+        "metrics": {
+          "residual_before": 0.0,
+          "residual_after": 0.0,
+          "improvement_relative": 0.0,
+          "channel_gain": []
+        }
+      },
+      {
+        "index": 3,
+        "action": "compute_secondary_comparison",
+        "evidence": [
+          "Lab difference indicated: False.",
+          "Canny edges indicated: False.",
+          "SSIM indicated: False.",
+          "Method disagreement: False."
+        ],
+        "outcome": "measured",
+        "uncertainty": "The three methods measure different properties; disagreement is kept visible rather than averaged away.",
+        "metrics": {
+          "lab_difference_indicated": false,
+          "canny_indicated": false,
+          "ssim_indicated": false,
+          "methods_disagree": false
+        }
+      },
+      {
+        "index": 4,
+        "action": "stop",
+        "evidence": [
+          "The robust overlap residual is already near zero after the simplest model."
+        ],
+        "outcome": "stopped",
+        "uncertainty": "Stopping does not make the measurement a defect decision; it only ends the investigation.",
+        "metrics": {
+          "ncc": 1.0,
+          "residual_normalized": 0.0,
+          "overlap_fraction": 1.0,
+          "changed_percentage": 0.0,
+          "region_count": 0
+        }
+      }
+    ],
+    "iteration_count": 5
+  },
+  "function_trace": [
+    {
+      "stage": "decode",
+      "functions": [
+        "cv2.imdecode"
+      ]
+    },
+    {
+      "stage": "orientation",
+      "functions": [
+        "cv2.resize",
+        "cv2.cvtColor",
+        "cv2.GaussianBlur",
+        "np.corrcoef"
+      ]
+    },
+    {
+      "stage": "comparison_initial",
+      "functions": [
+        "cv2.cvtColor",
+        "cv2.medianBlur",
+        "cv2.connectedComponentsWithStats",
+        "cv2.morphologyEx",
+        "cv2.applyColorMap"
+      ]
+    },
+    {
+      "stage": "translation",
+      "functions": [
+        "cv2.createHanningWindow",
+        "cv2.phaseCorrelate",
+        "np.fft.fft2",
+        "np.fft.ifft2"
+      ]
+    },
+    {
+      "stage": "residual_classification",
+      "functions": [
+        "cv2.Canny",
+        "cv2.distanceTransform",
+        "cv2.GaussianBlur"
+      ]
+    },
+    {
+      "stage": "photometric_normalization",
+      "functions": [
+        "np.linalg.lstsq"
+      ]
+    },
+    {
+      "stage": "comparison_final",
+      "functions": [
+        "cv2.cvtColor",
+        "cv2.medianBlur",
+        "cv2.connectedComponentsWithStats",
+        "cv2.morphologyEx",
+        "cv2.applyColorMap"
+      ]
+    },
+    {
+      "stage": "edge_comparison",
+      "functions": [
+        "cv2.cvtColor",
+        "cv2.Canny",
+        "cv2.distanceTransform"
+      ]
+    },
+    {
+      "stage": "ssim_comparison",
+      "functions": [
+        "cv2.cvtColor",
+        "cv2.GaussianBlur",
+        "cv2.connectedComponentsWithStats"
+      ]
+    },
+    {
+      "stage": "region_detection",
+      "functions": [
+        "cv2.connectedComponentsWithStats"
+      ]
+    }
+  ],
+  "selected_actions": [
+    "Applied a 270-degree clockwise orientation fix before shape checks.",
+    "Estimated shift 0.00 px is below the 0.5 px correction threshold; no correction was needed.",
+    "Photometric normalization was skipped: The overlap residual is already close to zero; photometric correction is unnecessary."
+  ],
+  "evidence": [
+    "Initial Lab comparison: 0.00% changed pixels (adaptive \u0394E threshold 2.50, minimum region 16 px).",
+    "Phase correlation estimated a translation of (-0.00, -0.00) px with response 1.000 and peak-to-second-peak ratio 125794304.32.",
+    "Canny edge comparison: 11772 reference and 11772 test edge pixels; 2-pixel matching tolerance.",
+    "Edge similarity 100.00% (disagreement 0.00%).",
+    "Mean SSIM 1.0000; 0.00% of the overlap is below the SSIM threshold 0.70.",
+    "Final Lab comparison: 0.00% changed pixels (adaptive \u0394E threshold 2.50)."
+  ],
+  "warnings": [
+    "Pixel, edge and SSIM measurements are heuristic comparison signals, not calibrated probabilities."
+  ],
+  "limitations": [
+    "This tool measures visual differences. It does not identify real-world defects.",
+    "Changed-pixel percentages, edge scores and SSIM values are heuristic comparison signals, not calibrated probabilities.",
+    "Rotated, scaled, affine and perspective alignment are estimated heuristically; a transform can still be wrong in subtle ways.",
+    "Photometric normalization can absorb smooth lighting changes, but it can also suppress a real change that looks like lighting.",
+    "Repetitive textures and symmetric parts can make alignment ambiguous; InspectAI flags this instead of silently correcting it.",
+    "Interpolation, focus, compression and sensor noise can create differences that have nothing to do with the scene content.",
+    "The Canny edge comparison uses automatically derived thresholds and a pixel tolerance; it is not a calibrated defect score.",
+    "This pass is local only. It does not include AWS deployment."
+  ]
+}

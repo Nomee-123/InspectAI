@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "generated_by": "demo/build_demo.py",
+    "generated_at_utc": "2026-10-26T16:30:31Z",
+    "pipeline": "inspectai.inspect_images + build_inspection_report (schema 2)",
+    "opencv": "5.0.0",
+    "numpy": "2.5.4",
+    "python": "3.14.4",
+    "case_count": 8,
+    "build_seconds": 6.94,
+    "note": "Every value is measured by the real pipeline on the procedural samples. Change regions are image-difference measurements, not defect verdicts."
+  },
+  "cases": [
+    {
+      "id": "shifted",
+      "label": "Shifted +11 / -7 px",
+      "expectation": "translation alignment should lock",
+      "status": "applied",
+      "method": "translation",
+      "changed_percentage": 0.0,
+      "region_count": 0,
+      "report": "evidence/shifted.json"
+    },
+    {
+      "id": "rotated_15",
+      "label": "Rotated 15 degrees",
+      "expectation": "arbitrary rotation should lock",
+      "status": "applied",
+      "method": "similarity",
+      "changed_percentage": 0.08126583488694489,
+      "region_count": 4,
+      "report": "evidence/rotated_15.json"
+    },
+    {
+      "id": "rotated_90",
+      "label": "Rotated 90 degrees",
+      "expectation": "orientation fix should lock",
+      "status": "applied",
+      "method": "orientation",
+      "changed_percentage": 0.0,
+      "region_count": 0,
+      "report": "evidence/rotated_90.json"
+    },
+    {
+      "id": "rotated_180",
+      "label": "Rotated 180 degrees",
+      "expectation": "orientation fix should lock",
+      "status": "applied",
+      "method": "orientation",
+      "changed_percentage": 0.0,
+      "region_count": 0,
+      "report": "evidence/rotated_180.json"
+    },
+    {
+      "id": "brighter",
+      "label": "Brighter exposure",
+      "expectation": "photometric normalization should reduce the residual",
+      "status": "not_needed",
+      "method": "photometric",
+      "changed_percentage": 4.767578125,
+      "region_count": 30,
+      "report": "evidence/brighter.json"
+    },
+    {
+      "id": "perspective",
+      "label": "Perspective warp",
+      "expectation": "affine or homography alignment should lock",
+      "status": "applied",
+      "method": "affine",
+      "changed_percentage": 0.7893880208333334,
+      "region_count": 21,
+      "report": "evidence/perspective.json"
+    },
+    {
+      "id": "patched",
+      "label": "Pasted patch change",
+      "expectation": "change region should remain visible",
+      "status": "not_needed",
+      "method": "none",
+      "changed_percentage": 0.7838541666666666,
+      "region_count": 1,
+      "report": "evidence/patched.json"
+    },
+    {
+      "id": "grid_ambiguous",
+      "label": "Periodic grid shifted one period (80 px)",
+      "expectation": "alignment should remain ambiguous",
+      "status": "ambiguous",
+      "method": "none",
+      "changed_percentage": 0.0,
+      "region_count": 0,
+      "report": "evidence/grid_ambiguous.json"
+    }
+  ]
+}

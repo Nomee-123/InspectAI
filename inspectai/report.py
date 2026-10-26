@@ -60,6 +60,9 @@ def build_inspection_report(
                 "status": step.status,
                 "reason": step.reason,
                 "metrics": _json_safe(step.metrics),
+                "keypoints_ref": _json_safe(step.keypoints_ref),
+                "keypoints_test": _json_safe(step.keypoints_test),
+                "keypoint_format": ["x", "y", "inlier"],
             }
         )
     iterations = []
@@ -219,6 +222,9 @@ def build_inspection_report(
             "final_matrix": _matrix(result.final_matrix),
             "steps": steps,
         },
+        # Top-level alias required by the v2 report contract.  It is the same
+        # sequence as alignment.steps, without previews or image pixels.
+        "alignment_steps": steps,
         "agent": {
             "iterations": iterations,
             "iteration_count": len(iterations),

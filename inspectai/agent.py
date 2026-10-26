@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import math
 from math import gcd
+from typing import Any, Callable
 
 import cv2
 import numpy as np
@@ -234,14 +235,24 @@ def inspect_images(
     reference: np.ndarray,
     test: np.ndarray,
     max_actions: int = DEFAULT_MAX_ACTIONS,
+    progress_callback: Callable[[str, dict[str, Any]], None] | None = None,
 ) -> InspectionResult:
-    """Run the evidence-driven alignment and comparison loop."""
+    """Run the evidence-driven alignment and comparison loop.
+
+    ``progress_callback`` receives ``(stage_name, detail)`` for real stage
+    starts and finishes.  ``detail["phase"]`` is ``"start"``, ``"finish"`` or
+    ``"update"``; finish details include the status and the OpenCV/NumPy
+    functions that actually ran.  Progress is observational only: it never
+    changes the inspection result.
+    """
     if reference is None or test is None or reference.size == 0 or test.size == 0:
         raise ValueError("Both images must contain pixel data.")
     if reference.ndim != 3 or test.ndim != 3:
         raise ValueError("Both images must be colour images with three channels.")
     if max_actions < 1:
         raise ValueError("The action budget must be at least one.")
+    if progress_callback is not None and not callable(progress_callback):
+        raise ValueError("The progress callback must be callable or None.")
 
     reference_height, reference_width = reference.shape[:2]
     test_height, test_width = test.shape[:2]
@@ -299,6 +310,30 @@ def inspect_images(
     def add_functions(stage: str, functions: list[str]) -> None:
         function_trace.append({"stage": stage, "functions": list(dict.fromkeys(functions))})
 
+    progress_errors = 0
+
+    def emit_progress(stage: str, phase: str, **detail: Any) -> None:
+        """Forward a real stage event without letting a listener break the run."""
+        nonlocal progress_errors
+        if progress_callback is None:
+            return
+        payload = {"phase": phase, **detail}
+        try:
+            progress_callback(stage, payload)
+        except Exception as error:  # pragma: no cover - defensive UI boundary
+            progress_errors += 1
+            if progress_errors == 1:
+                uncertainty_warnings.append(
+                    "A progress listener raised an error; the inspection continued: "
+                    f"{type(error).__name__}: {error}"
+                )
+
+    emit_progress(
+        "acquire",
+        "start",
+        reference_dimensions={"width": reference_width, "height": reference_height},
+        test_dimensions={"width": test_width, "height": test_height},
+    )
     add_functions("decode", ["cv2.imdecode"])
     add_step(
         "Original",
@@ -309,10 +344,19 @@ def inspect_images(
         {"width": test_width, "height": test_height},
         preview=test.copy(),
     )
+    emit_progress(
+        "acquire",
+        "finish",
+        status="done",
+        dimensions={"width": test_width, "height": test_height},
+        reference_dimensions={"width": reference_width, "height": reference_height},
+        functions=["cv2.imdecode"],
+    )
 
     # ------------------------------------------------------------------
     # Orientation pre-step (multiples of 90 degrees only)
     # ------------------------------------------------------------------
+    emit_progress("orientation", "start")
     orientation = assess_orientation(reference, test)
     add_functions("orientation", orientation["opencv_functions"])
     current_test = test.copy()
@@ -415,6 +459,15 @@ def inspect_images(
             "best_score": best["score"],
             "margin": orientation["margin"],
         },
+    )
+    emit_progress(
+        "orientation",
+        "finish",
+        status=orientation["status"],
+        best_degrees=best["clockwise_degrees"],
+        score=best["score"],
+        margin=orientation["margin"],
+        functions=orientation["opencv_functions"],
     )
 
     # ------------------------------------------------------------------
@@ -536,6 +589,7 @@ def inspect_images(
         if photometric_done:
             return
         photometric_done = True
+        emit_progress("photometric", "start", note=stage_note)
         result = fit_photometric_normalization(reference, current_test, current_mask)
         photometric_result = result
         add_functions("photometric_normalization", result.opencv_functions)
@@ -591,16 +645,28 @@ def inspect_images(
                 "channel_gain": result.channel_gain,
             },
         )
+        emit_progress(
+            "photometric",
+            "finish",
+            status=result.status,
+            applied=result.applied,
+            improvement_relative=result.improvement_relative,
+            functions=result.opencv_functions,
+        )
 
     # ------------------------------------------------------------------
     # Translation (cheapest candidate)
     # ------------------------------------------------------------------
+    translation_progress_status = "skipped"
+    translation_functions: list[str] = []
+    emit_progress("translation", "start")
     if not ladder_stopped:
         phase = phase_correlation(
             reference_gray.astype(np.float32), current_gray.astype(np.float32)
         )
         phase_response = float(phase.response)
         phase_peak_ratio = float(phase.peak_ratio)
+        translation_functions = list(phase.functions)
         add_functions("translation", phase.functions)
         evidence.append(phase.reason)
         if phase.status in {"weak", "ambiguous", "failed", "skipped"}:
@@ -610,6 +676,7 @@ def inspect_images(
                 "failed": "skipped",
                 "skipped": "skipped",
             }[phase.status]
+            translation_progress_status = phase_step_status
             add_step(
                 "Coarse: phase correlation",
                 "translation",
@@ -736,6 +803,7 @@ def inspect_images(
                 step_status = "skipped"
             else:
                 step_status = "rejected"
+            translation_progress_status = step_status
             metrics = {
                 **after_metrics,
                 "shift_x": phase.shift[0],
@@ -803,10 +871,19 @@ def inspect_images(
                 termination_reason = (
                     "The robust overlap residual is already near zero after the simplest model."
                 )
+    emit_progress(
+        "translation",
+        "finish",
+        status=translation_progress_status,
+        functions=translation_functions,
+    )
 
     # ------------------------------------------------------------------
     # Similarity, affine and homography ladder
     # ------------------------------------------------------------------
+    register_functions: list[str] = []
+    register_updates: list[dict[str, Any]] = []
+    emit_progress("register", "start")
     for model in ("similarity", "affine", "homography"):
         if ladder_stopped or ambiguity_flag or not budget_left():
             break
@@ -819,6 +896,7 @@ def inspect_images(
 
         bundle = _detect_and_match(reference_gray, current_gray)
         add_functions(f"{model}_feature_matching", bundle.functions)
+        register_functions.extend(bundle.functions)
         feature_candidate = estimate_feature_transform(
             bundle, model, reference_width, reference_height
         )
@@ -962,6 +1040,20 @@ def inspect_images(
                             ladder_stopped = True
                             termination_reason = cross_reason
                             uncertainty_warnings.append(cross_reason)
+                            register_updates.append({"model": model, "status": "ambiguous"})
+                            emit_progress(
+                                "register",
+                                "update",
+                                model=model,
+                                status="ambiguous",
+                                reason=cross_reason,
+                                functions=list(
+                                    dict.fromkeys(
+                                        candidate.functions
+                                        + independent_candidate.functions
+                                    )
+                                ),
+                            )
                             actions_used += 1
                             break
                         if status == "agree":
@@ -998,6 +1090,16 @@ def inspect_images(
                 "rejected",
                 "No candidate cleared the inlier, spread and plausibility gates for this model.",
                 candidate.metrics,
+            )
+            register_functions.extend(candidate.functions)
+            register_updates.append({"model": model, "status": "rejected"})
+            emit_progress(
+                "register",
+                "update",
+                model=model,
+                status="rejected",
+                reason=candidate.reason,
+                functions=list(dict.fromkeys(candidate.functions)),
             )
             actions_used += 1
             continue
@@ -1042,6 +1144,20 @@ def inspect_images(
             ),
             step_metrics,
         )
+        register_functions.extend(candidate.functions)
+        register_updates.append({"model": model, "status": status})
+        emit_progress(
+            "register",
+            "update",
+            model=model,
+            status=status,
+            reason=reason,
+            functions=list(
+                dict.fromkeys(
+                    candidate.metrics.get("opencv_functions", []) + candidate.functions
+                )
+            ),
+        )
         actions_used += 1
         if accepted:
             apply_candidate(candidate.matrix, aligned, candidate_mask, after_metrics)
@@ -1078,6 +1194,25 @@ def inspect_images(
         else:
             decisions.append(reason)
 
+    register_status = "skipped"
+    if any(update["status"] == "accepted" for update in register_updates):
+        register_status = "accepted"
+    elif any(update["status"] == "ambiguous" for update in register_updates):
+        register_status = "ambiguous"
+    elif register_updates:
+        register_status = "rejected"
+    for entry in function_trace:
+        if entry["stage"].startswith(("similarity", "affine", "homography", "log_polar")):
+            register_functions.extend(entry["functions"])
+    emit_progress(
+        "register",
+        "finish",
+        status=register_status,
+        models=list(register_updates),
+        accepted_models=list(accepted_models),
+        functions=list(dict.fromkeys(register_functions)),
+    )
+
     # ------------------------------------------------------------------
     # Photometric normalization (always considered before the final diff)
     # ------------------------------------------------------------------
@@ -1092,6 +1227,15 @@ def inspect_images(
                 reference, current_test, np.eye(3), erode=2
             )[2]
             current_gray = cv2.cvtColor(current_test, cv2.COLOR_BGR2GRAY)
+    if not photometric_done:
+        emit_progress(
+            "photometric",
+            "finish",
+            status="skipped",
+            applied=False,
+            reason="The action budget ended before photometric normalization was considered.",
+            functions=[],
+        )
 
     final_valid_mask = current_mask
     final_test = current_test
@@ -1112,6 +1256,7 @@ def inspect_images(
         final_test = single_warp
 
     # Final comparison methods.
+    emit_progress("analyze", "start")
     final = compare_images(reference, final_test, final_valid_mask)
     add_functions("comparison_final", final.opencv_functions)
     independent_comparison = compare_edges(reference, final_test, final_valid_mask)
@@ -1122,6 +1267,23 @@ def inspect_images(
         final.difference_mask, minimum_area=final.minimum_region_area
     )
     add_functions("region_detection", ["cv2.connectedComponentsWithStats"])
+    emit_progress(
+        "analyze",
+        "finish",
+        status="done",
+        changed_percentage=final.changed_percentage,
+        region_count=changed_regions["region_count"],
+        edge_status=independent_comparison.status,
+        ssim_status=ssim_comparison.status,
+        functions=list(
+            dict.fromkeys(
+                final.opencv_functions
+                + independent_comparison.opencv_functions
+                + ssim_comparison.opencv_functions
+                + ["cv2.connectedComponentsWithStats"]
+            )
+        ),
+    )
 
     edge_change_indicated = independent_comparison.change_indicated
     ssim_change_indicated = ssim_comparison.change_indicated
@@ -1191,6 +1353,7 @@ def inspect_images(
     # ------------------------------------------------------------------
     # Terminate the loop with an explicit decision.
     # ------------------------------------------------------------------
+    emit_progress("verify", "start")
     if translation_ambiguous and not alignment_applied:
         alignment_status = "ambiguous"
     elif ambiguity_flag:
@@ -1311,7 +1474,7 @@ def inspect_images(
         "Pixel, edge and SSIM measurements are heuristic comparison signals, not calibrated probabilities.",
     )
 
-    return InspectionResult(
+    inspection_result = InspectionResult(
         initial_comparison=initial,
         final_comparison=final,
         changed_regions=changed_regions,
@@ -1344,3 +1507,14 @@ def inspect_images(
         overlap_fraction=overlap_fraction,
         function_trace=function_trace,
     )
+    emit_progress(
+        "verify",
+        "finish",
+        status=alignment_status,
+        alignment_method=alignment_method,
+        changed_percentage=final.changed_percentage,
+        region_count=changed_regions["region_count"],
+        indication_agreement=indication_agreement,
+        functions=[],
+    )
+    return inspection_result

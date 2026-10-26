@@ -1,0 +1,62 @@
+{
+  "generated_by": "samples/make_samples.py",
+  "description": "Procedural demo pairs for InspectAI. No copyrighted imagery.",
+  "cases": [
+    {
+      "id": "shifted",
+      "label": "Shifted +11 / -7 px",
+      "reference": "reference.png",
+      "test": "shifted.png",
+      "expectation": "translation alignment should lock"
+    },
+    {
+      "id": "rotated_15",
+      "label": "Rotated 15 degrees",
+      "reference": "reference.png",
+      "test": "rotated_15.png",
+      "expectation": "arbitrary rotation should lock"
+    },
+    {
+      "id": "rotated_90",
+      "label": "Rotated 90 degrees",
+      "reference": "reference.png",
+      "test": "rotated_90.png",
+      "expectation": "orientation fix should lock"
+    },
+    {
+      "id": "rotated_180",
+      "label": "Rotated 180 degrees",
+      "reference": "reference.png",
+      "test": "rotated_180.png",
+      "expectation": "orientation fix should lock"
+    },
+    {
+      "id": "brighter",
+      "label": "Brighter exposure",
+      "reference": "reference.png",
+      "test": "brighter.png",
+      "expectation": "photometric normalization should reduce the residual"
+    },
+    {
+      "id": "perspective",
+      "label": "Perspective warp",
+      "reference": "reference.png",
+      "test": "perspective.png",
+      "expectation": "affine or homography alignment should lock"
+    },
+    {
+      "id": "patched",
+      "label": "Pasted patch change",
+      "reference": "reference.png",
+      "test": "patched.png",
+      "expectation": "change region should remain visible"
+    },
+    {
+      "id": "grid_ambiguous",
+      "label": "Periodic grid shifted one period (80 px)",
+      "reference": "grid.png",
+      "test": "grid_shifted.png",
+      "expectation": "alignment should remain ambiguous"
+    }
+  ]
+}

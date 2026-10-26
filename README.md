@@ -19,6 +19,12 @@ Align the geometry. Measure the difference three ways. Record every decision. Ne
 [**Read a real report**](demo/evidence/perspective.json) ·
 [**Browse the evidence**](demo/evidence/)
 
+<br>
+<sub>The hosted demo is deployed by GitHub Pages. If the link is not live yet,
+enable <b>Settings → Pages → Source: GitHub Actions</b> once, then re-run the
+workflow — or open <code>demo/index.html</code> locally. See
+<a href="#deploy-the-demo">Deploy the demo</a>.</sub>
+
 </div>
 
 > [!IMPORTANT]

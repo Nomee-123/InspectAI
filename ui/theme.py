@@ -58,6 +58,8 @@ html, body, .stApp {
 .stApp {
   position: relative;
   isolation: isolate;
+  min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
 }
 
@@ -156,15 +158,18 @@ select:focus-visible,
 summary:focus-visible,
 [role="slider"]:focus-visible,
 [role="button"]:focus-visible,
-[data-baseweb="tab"]:focus-visible {
+[role="tab"]:focus-visible {
   outline: 2px solid var(--vc-cyan) !important;
   outline-offset: 2px !important;
   box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.16) !important;
 }
 
-/* Streamlit widget skins. */
-.stButton > button,
-.stDownloadButton > button {
+/* Streamlit widget skins.  Streamlit wraps buttons with a tooltip element when
+   a help string is supplied, so the skin must target any descendant button. */
+.stButton button,
+.stDownloadButton button,
+[data-testid="stBaseButton-primary"],
+[data-testid="stBaseButton-secondary"] {
   font-family: var(--vc-heading);
   font-size: 0.72rem;
   letter-spacing: 0.12em;
@@ -176,21 +181,25 @@ summary:focus-visible,
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
-.stButton > button:hover,
-.stDownloadButton > button:hover {
+.stButton button:hover,
+.stDownloadButton button:hover,
+[data-testid="stBaseButton-primary"]:hover,
+[data-testid="stBaseButton-secondary"]:hover {
   border-color: var(--vc-cyan);
   box-shadow: 0 0 24px rgba(0, 229, 255, 0.22), inset 0 0 18px rgba(0, 229, 255, 0.10);
   transform: translateY(-1px);
   color: #ffffff;
 }
 
-.stButton > button[kind="primary"] {
+.stButton button[kind="primary"],
+[data-testid="stBaseButton-primary"] {
   background: linear-gradient(100deg, rgba(0, 229, 255, 0.26), rgba(41, 121, 255, 0.18));
   color: #f2fdff;
   border-color: var(--vc-cyan);
 }
 
-.stButton > button:disabled {
+.stButton button:disabled,
+.stDownloadButton button:disabled {
   opacity: 0.38;
   box-shadow: none;
 }
@@ -246,42 +255,46 @@ summary:focus-visible,
   color: #ffe7b0;
 }
 
-/* Tabs: short slide/opacity wipe, never faster than 3 Hz. */
-.stTabs [data-baseweb="tab-list"] {
+/* Tabs: short slide/opacity wipe, never faster than 3 Hz.
+   Streamlit 1.6x renders React Aria tabs (role="tab"/"tablist"/"tabpanel")
+   instead of BaseWeb nodes, so target the accessible roles directly. */
+.stTabs [role="tablist"],
+[data-testid="stTabs"] [role="tablist"] {
   gap: 4px;
   border-bottom: 1px solid rgba(0, 229, 255, 0.18);
 }
 
-.stTabs [data-baseweb="tab"] {
+.stTabs [role="tab"],
+[data-testid="stTabs"] [role="tab"] {
   font-family: var(--vc-heading);
   font-size: 0.68rem;
   letter-spacing: 0.14em;
   color: var(--vc-muted);
   background: rgba(7, 16, 31, 0.55);
   border: 1px solid transparent;
-  border-bottom: none;
+  border-bottom: 2px solid transparent;
   border-radius: 2px 2px 0 0;
   padding: 0.62rem 1.05rem;
   transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
 }
 
-.stTabs [data-baseweb="tab"]:hover {
+.stTabs [role="tab"]:hover,
+[data-testid="stTabs"] [role="tab"]:hover {
   color: var(--vc-text);
   background: rgba(0, 229, 255, 0.07);
 }
 
-.stTabs [aria-selected="true"] {
+.stTabs [role="tab"][aria-selected="true"],
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
   color: var(--vc-cyan) !important;
   background: rgba(0, 229, 255, 0.09) !important;
   border-color: rgba(0, 229, 255, 0.32) !important;
+  border-bottom-color: var(--vc-cyan) !important;
+  box-shadow: inset 0 -1px 0 rgba(0, 229, 255, 0.75);
 }
 
-.stTabs [data-baseweb="tab-highlight"] {
-  background: var(--vc-cyan);
-  box-shadow: 0 0 16px rgba(0, 229, 255, 0.8);
-}
-
-.stTabs [data-baseweb="tab-panel"] {
+.stTabs [role="tabpanel"],
+.stTabs [data-testid="stTabPanel"] {
   animation: vc-tab-in 280ms ease-out both;
 }
 
@@ -1142,7 +1155,8 @@ html.reduce-motion .stApp::after { opacity: 0.45; }
   .vc-image-head { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
   .vc-gauge svg { width: 92px; height: 92px; }
   .vc-gauge-value { top: 2.65rem; font-size: 1rem; }
-  .stTabs [data-baseweb="tab"] { padding: 0.5rem 0.62rem; font-size: 0.6rem; }
+  .stTabs [role="tab"],
+  [data-testid="stTabs"] [role="tab"] { padding: 0.5rem 0.62rem; font-size: 0.6rem; }
 }
 
 @media (max-width: 430px) {

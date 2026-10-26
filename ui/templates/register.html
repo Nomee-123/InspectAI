@@ -245,10 +245,12 @@ const steps = DATA.steps || [];
 function clamp01(value){ return Math.min(1, Math.max(0, value)); }
 function lerp(a,b,p){ return a + (b-a) * p; }
 function statusClass(status){ return ['accepted','ambiguous','rejected','skipped'].includes(status) ? status : 'skipped'; }
-function statusLabel(status){
+function statusLabel(step){
+  const status = step.status;
   if (status === 'accepted') return 'LOCKED';
   if (status === 'ambiguous') return 'AMBIGUOUS';
   if (status === 'rejected') return 'REJECTED';
+  if (step.name === 'Final') return 'NO ALIGNMENT';
   return 'SKIPPED';
 }
 function fmt(value, digits=2){
@@ -342,7 +344,7 @@ function decompose(m){
 
 function setBadge(step){
   const cls = statusClass(step.status);
-  badge.textContent = statusLabel(step.status);
+  badge.textContent = statusLabel(step);
   badge.className = 'stage-badge ' + cls;
   stageId.textContent = `STEP ${String(step.index).padStart(2,'0')} / ${String(steps.length-1).padStart(2,'0')}`;
   stageLive.textContent = (step.model || 'none').toUpperCase() + ' / ' + (fidelity.checked ? 'OPENCV PREVIEW' : 'ANIMATED TRANSFORM');
@@ -452,7 +454,7 @@ function renderMetrics(step, matrix){
   const d = decompose(matrix);
   const rows = [
     ['model', step.model || 'none'],
-    ['status', statusLabel(step.status)],
+    ['status', statusLabel(step)],
     ['rotation', `${fmt(d.angle,2)} deg`],
     ['scale', fmt(d.scale,4)],
     ['translation', `${fmt(d.tx,1)}, ${fmt(d.ty,1)} px`],

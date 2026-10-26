@@ -89,14 +89,15 @@ function describe(region, index){
   return `R${index + 1} · x ${region.x}, y ${region.y} · ${region.width} x ${region.height} px · area ${region.area_pixels} px. Boxed by cv2.connectedComponentsWithStats after the Lab threshold and 3x3 open/close cleanup.`;
 }
 
+const boxes = [];
+const tags = [];
+
 if (!regions.length){
   document.getElementById('stage').style.display = 'none';
   list.style.display = 'none';
   detail.className = 'empty';
   detail.innerHTML = `<b>no change regions survived</b><span>No connected component passed the ${DATA.minimum_area} px area and Lab-contrast filters. Change indications are below the reporting gate.</span>`;
 } else {
-  const boxes = [];
-  const tags = [];
   regions.forEach((region, index) => {
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     rect.setAttribute('class', 'box');

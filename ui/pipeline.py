@@ -192,36 +192,42 @@ def _first_float(metrics: dict, *keys: str) -> float | None:
     return None
 
 
-def _annotated_regions(image: np.ndarray, regions: list[dict]) -> np.ndarray:
-    annotated = image.copy()
-    for index, region in enumerate(regions, start=1):
-        x, y = int(region["x"]), int(region["y"])
-        right = x + int(region["width"]) - 1
-        bottom = y + int(region["height"]) - 1
-        cv2.rectangle(annotated, (x, y), (right, bottom), (0, 229, 255), 2)
-        cv2.rectangle(annotated, (x - 1, y - 1), (right + 1, bottom + 1), (0, 0, 0), 1)
-        label = f"R{index}"
-        (text_width, text_height), _ = cv2.getTextSize(
-            label, cv2.FONT_HERSHEY_SIMPLEX, 0.48, 1
-        )
-        cv2.rectangle(
-            annotated,
-            (x, max(0, y - text_height - 8)),
-            (x + text_width + 8, y),
-            (255, 179, 0),
-            -1,
-        )
-        cv2.putText(
-            annotated,
-            label,
-            (x + 4, max(text_height, y - 5)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.48,
-            (7, 16, 31),
-            1,
-            cv2.LINE_AA,
-        )
-    return annotated
+GEOMETRIC_MODELS = {"orientation", "translation", "similarity", "affine", "homography", "log_polar"}
+
+
+def _default_step_index(step_payloads: list[dict], alignment_status: str) -> int:
+    """Pick the step that explains the final alignment result.
+
+    An ambiguous result should open on an ambiguous candidate so the ghost
+    comparison is visible.  Otherwise prefer the last accepted geometric
+    transform, then another accepted step (for example photometric
+    normalization), and finally the final step.
+    """
+    if not step_payloads:
+        return 0
+    if alignment_status == "ambiguous":
+        ambiguous = [
+            step
+            for step in step_payloads
+            if step["status"] == "ambiguous" and step.get("preview_uri")
+        ]
+        if ambiguous:
+            return int(ambiguous[-1]["index"])
+    geometric = [
+        step
+        for step in step_payloads
+        if step["status"] == "accepted" and step["model"] in GEOMETRIC_MODELS
+    ]
+    if geometric:
+        return int(geometric[-1]["index"])
+    accepted = [
+        step
+        for step in step_payloads
+        if step["status"] == "accepted" and step["name"] != "Original"
+    ]
+    if accepted:
+        return int(accepted[-1]["index"])
+    return int(step_payloads[-1]["index"])
 
 
 def stage_telemetry(events: list[dict]) -> dict[str, dict]:
@@ -389,15 +395,7 @@ def _construct_payload(
         mask_visual = difference_mask
 
     step_payloads = [_step_payload(step) for step in result.alignment_steps]
-    default_index = next(
-        (
-            step.index
-            for step in result.alignment_steps
-            if step.status == "accepted"
-            and step.model in {"orientation", "translation", "similarity", "affine", "homography"}
-        ),
-        step_payloads[-1]["index"] if step_payloads else 0,
-    )
+    default_index = _default_step_index(step_payloads, result.alignment_status)
 
     telemetry = stage_telemetry(events)
     final_test = result.final_test_image
@@ -420,9 +418,7 @@ def _construct_payload(
         "aligned_uri": image_data_uri(aligned_test),
         "heatmap_uri": image_data_uri(final.heatmap),
         "mask_uri": image_data_uri(mask_visual),
-        "annotated_uri": image_data_uri(_annotated_regions(aligned_test, regions)),
         "ref_edges_uri": image_data_uri(_edge_image(comparison_reference, (255, 229, 0))),
-        "test_edges_uri": image_data_uri(_edge_image(aligned_test, (0, 179, 255))),
         "regions": _json_safe(regions),
         "region_count": int(result.changed_regions.get("region_count", 0)),
         "detected_region_count": int(result.changed_regions.get("detected_region_count", 0)),

@@ -66,8 +66,8 @@ def _fill(
     return result
 
 
-def _component(source: str) -> None:
-    st.iframe(source, width="stretch", height="content")
+def _component(source: str, *, alt: str | None = None) -> None:
+    st.iframe(source, width="stretch", height="content", alt=alt)
 
 
 def _esc(value: Any) -> str:
@@ -112,7 +112,10 @@ def render_hero(
         "logo_uri": logo_uri or "",
         "boot": bool(boot),
     }
-    _component(_fill(_template("hero.html"), payload, reduced))
+    _component(
+        _fill(_template("hero.html"), payload, reduced),
+        alt="InspectAI VISION CORE header: runtime versions and an animated particle field.",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -127,13 +130,26 @@ def render_pipeline(telemetry: dict[str, dict[str, Any]]) -> None:
         state = str(entry.get("state", "pending"))
         status = str(entry.get("status", "") or state)
         functions = _functions(entry)
-        function_text = functions[0] if functions else "awaiting"
-        extra = len(functions) - 1
-        if extra > 0:
-            function_text = f"{function_text} +{extra}"
+        if functions:
+            function_text = functions[0]
+            extra = len(functions) - 1
+            if extra > 0:
+                function_text = f"{function_text} +{extra}"
+            tooltip = f"{status} · {' '.join(functions)}"
+        elif state == "pending":
+            function_text = "awaiting"
+            tooltip = "not run yet"
+        elif state == "running":
+            function_text = "running"
+            tooltip = "stage in progress; no OpenCV call recorded yet"
+        else:
+            # VERIFY ends with a decision rather than a new OpenCV call, so it
+            # has no function list.  Show the real status instead of "awaiting".
+            function_text = status
+            tooltip = f"{status} · no OpenCV call recorded for this stage"
         nodes.append(
             f"""
-            <div class="vc-node {state}" title="{_esc(status)} · {_esc(' '.join(functions) or 'not run yet')}">
+            <div class="vc-node {state}" title="{_esc(tooltip)}">
               <div class="vc-node-ring">{position:02d}</div>
               <div class="vc-node-name">{_esc(STAGE_LABELS[stage])}</div>
               <span class="vc-node-fn">{_esc(function_text)}</span>
@@ -158,10 +174,18 @@ def render_radar(
     detail = detail or {}
     stage_label = STAGE_LABELS.get(stage or "", "IDLE").upper()
     functions = [str(item) for item in detail.get("functions", [])]
-    if not functions:
-        functions = ["waiting for a real progress event"]
-    title = "PIPELINE RUNNING" if running else "PIPELINE COMPLETE"
     phase = str(detail.get("phase", "waiting"))
+    if not functions:
+        if phase == "finish":
+            # VERIFY is a decision stage: it records no new OpenCV call.
+            functions = ["no OpenCV call recorded in this stage"]
+        elif phase == "cache":
+            functions = ["cached measurements replayed"]
+        elif running:
+            functions = ["stage in progress"]
+        else:
+            functions = ["waiting for a real progress event"]
+    title = "PIPELINE RUNNING" if running else "PIPELINE COMPLETE"
     reason = str(detail.get("reason", "") or detail.get("message", "") or "")
     status = str(detail.get("status", "") or "")
     meta = " · ".join(part for part in (phase, status, reason[:160]) if part)
@@ -197,7 +221,10 @@ def render_gauges(gauges: Iterable[dict[str, Any]], *, reduced: bool) -> None:
             unsafe_allow_html=True,
         )
         return
-    _component(_fill(_template("gauges.html"), payload, reduced))
+    _component(
+        _fill(_template("gauges.html"), payload, reduced),
+        alt="Measured changed pixels, alignment overlap, edge similarity and method agreement.",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -266,7 +293,8 @@ def render_swipe(
     }
     aspect = f"{max(1, width)} / {max(1, height)}"
     _component(
-        _fill(_template("swipe.html"), payload, reduced, aspect=aspect)
+        _fill(_template("swipe.html"), payload, reduced, aspect=aspect),
+        alt="Interactive wipe comparison between the reference and the aligned test image.",
     )
 
 
@@ -297,7 +325,8 @@ def render_regions(
     }
     aspect = f"{max(1, width)} / {max(1, height)}"
     _component(
-        _fill(_template("regions.html"), payload, reduced, aspect=aspect)
+        _fill(_template("regions.html"), payload, reduced, aspect=aspect),
+        alt="Change-region overlay; select a box or row to read its measured bounds.",
     )
 
 
@@ -323,7 +352,10 @@ def render_register(register: dict[str, Any], *, reduced: bool) -> None:
         "steps": register["steps"],
         "default_index": int(register.get("default_index", 0)),
     }
-    _component(_fill(_template("register.html"), payload, reduced))
+    _component(
+        _fill(_template("register.html"), payload, reduced),
+        alt="Alignment step timeline with markers, matrices and residual gauges.",
+    )
 
 
 # ---------------------------------------------------------------------------

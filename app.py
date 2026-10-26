@@ -258,6 +258,7 @@ if reference_bytes is not None and test_bytes is not None:
         st.error(f"Image could not be opened: {decode_error}")
 
 aspect_mismatch = False
+quarter_turn_shape = False
 crop_enabled = False
 crop_error = None
 target_aspect_source = "Reference image"
@@ -268,6 +269,18 @@ if reference_image is not None and test_image is not None:
     reference_height, reference_width = reference_image.shape[:2]
     test_height, test_width = test_image.shape[:2]
     aspect_mismatch = reference_width * test_height != test_width * reference_height
+    # A 90/270-degree rotated frame has the reciprocal aspect ratio.  The
+    # orientation step can undo that quarter turn, so this pair must reach the
+    # pipeline instead of being blocked by the geometry gate.
+    quarter_turn_shape = bool(
+        aspect_mismatch
+        and abs(
+            (reference_width / max(1, reference_height))
+            * (test_width / max(1, test_height))
+            - 1.0
+        )
+        <= 0.02
+    )
 
     components.kicker("image geometry")
     components.readouts(
@@ -281,14 +294,26 @@ if reference_image is not None and test_image is not None:
     st.caption(f"reference: {reference_name} · test: {test_name}")
 
     if aspect_mismatch:
-        st.warning(
-            "These images have different shapes. Comparing them directly would stretch one "
-            "image. Use center-cropped preview copies for this analysis, or upload images "
-            "with matching aspect ratios."
-        )
+        if quarter_turn_shape:
+            st.info(
+                "This pair has quarter-turn shape geometry: the reference is "
+                f"{aspect_text(reference_width, reference_height)} and the test is "
+                f"{aspect_text(test_width, test_height)}. The orientation check runs before "
+                "the shape check, so it can inspect this pair without cropping. If the "
+                "orientation result is ambiguous, enable center-cropped copies below."
+            )
+        else:
+            st.warning(
+                "These images have different shapes. Comparing them directly would stretch one "
+                "image. Use center-cropped preview copies for this analysis, or upload images "
+                "with matching aspect ratios."
+            )
         crop_enabled = st.checkbox(
             "Preview and use center-cropped copies for this analysis",
             key="center_crop_enabled",
+            help=(
+                "Optional for a quarter-turn shape; required when the two frames have unrelated shapes."
+            ),
         )
         if crop_enabled:
             target_aspect_source = st.selectbox(
@@ -332,7 +357,7 @@ if reference_image is not None and test_image is not None:
                         aspect=cropped_test.shape[1] / cropped_test.shape[0],
                     )
 
-analysis_blocked = aspect_mismatch and not crop_enabled
+analysis_blocked = aspect_mismatch and not crop_enabled and not quarter_turn_shape
 crop_ready = not crop_enabled or (cropped_reference is not None and cropped_test is not None)
 images_decoded = reference_image is not None and test_image is not None
 
@@ -417,6 +442,9 @@ if run_requested and images_decoded and crop_ready and not analysis_blocked:
             )
         else:
             st.error(f"Analysis could not be completed: {error}")
+        st.session_state["analysis_payload"] = None
+        st.session_state["payload_live"] = False
+        st.session_state["analysis_signature"] = analysis_signature
         payload = None
         payload_live = False
     else:
@@ -541,7 +569,15 @@ def render_results(analysis: dict[str, Any]) -> None:
                 "difference heatmap",
                 analysis["heatmap_uri"],
                 meta=f"ΔE threshold {as_number(measurements['threshold'], 2)}",
-                caption="Turbo colormap of the Lab ΔE magnitude after alignment. Scaled for display, not a defect score.",
+                caption=(
+                    "Turbo colormap of the Lab ΔE magnitude after alignment"
+                    + (
+                        ", with photometric normalization applied before comparison"
+                        if measurements["photometric_applied"]
+                        else ""
+                    )
+                    + ". Scaled for display, not a defect score."
+                ),
                 aspect=aspect,
             )
         with right:
@@ -630,12 +666,23 @@ def render_results(analysis: dict[str, Any]) -> None:
             for line in analysis["evidence"]:
                 st.markdown(f"- {line}")
 
+        with st.expander("Agent decisions", expanded=False):
+            if analysis["decisions"]:
+                for decision in analysis["decisions"]:
+                    st.markdown(f"- {decision}")
+            else:
+                st.markdown("- No explicit agent decisions were recorded for this pair.")
+
         with st.expander("Uncertainty warnings", expanded=True):
             if analysis["warnings"]:
                 for warning in analysis["warnings"]:
                     st.markdown(f"- {warning}")
             else:
                 st.markdown("- No additional uncertainty warnings were recorded for this pair.")
+
+        with st.expander("Limitations", expanded=False):
+            for limitation in analysis["limitations"]:
+                st.markdown(f"- {limitation}")
 
         with st.expander("Function trace", expanded=False):
             st.json(analysis["function_trace"])

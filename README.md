@@ -102,16 +102,20 @@ Streamlit prints a local URL, usually `http://localhost:8501`.
 
 1. Upload a reference image and a test image, or load a generated demo pair from
    the sidebar. Both uploads take precedence over a loaded demo pair.
-2. Enable center-cropped copies if the images have different aspect ratios.
+2. Enable center-cropped copies only when the shapes are unrelated. A 90°/270°
+   rotated pair already has reciprocal aspect ratios, so the orientation step
+   inspects it without cropping.
 3. Select **Run inspection**.
 4. Review the three result tabs:
    - **REGISTER** — step timeline, Prev/Next/Play, scrubber, lock-on markers,
      blend/checker/difference/edge/A-B/swipe overlays, an OpenCV preview toggle,
-     LOCKED/AMBIGUOUS/REJECTED badges, metrics, reasons and a residual chart.
+     LOCKED/AMBIGUOUS/REJECTED/NO ALIGNMENT badges, metrics, reasons and a
+     residual chart.
    - **ANALYZE** — reference, aligned test, difference heatmap, change mask,
      interactive change-region boxes, region tags and the reference/aligned wipe.
    - **VERIFY** — per-method indications (Lab ΔE, Canny, SSIM), the agent feed,
-     warnings, the function trace, the JSON preview and a download button.
+     evidence lines, agent decisions, uncertainty warnings, limitations, the
+     function trace, the JSON preview and a download button.
 5. Use **Reduce motion** in the sidebar to stop ambient CSS animation, particles,
    boot playback, registration playback and gauge count-up. The **LIMITATIONS**
    expander is always available.
@@ -125,8 +129,10 @@ The page is a thin Streamlit shell around `inspectai` (pipeline) and `ui`
 `samples/make_samples.py` writes deterministic, procedural PNG pairs plus
 `samples/manifest.json`: shifted translation, 15°/90°/180° rotations, brighter
 exposure, perspective warp, a pasted patch, and a periodic grid shifted by one
-period. The grid pair is designed to stay **alignment ambiguous**; no sample
-result is scripted. The sidebar buttons load a pair and run the real pipeline.
+period. The 90° pair reaches the pipeline through the quarter-turn shape check
+instead of the crop gate. The grid pair is designed to stay **alignment
+ambiguous**; no sample result is scripted. The sidebar buttons load a pair and
+run the real pipeline.
 
 ### Motion and accessibility
 

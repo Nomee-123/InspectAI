@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap');
+  :root{--cyan:#00E5FF;--amber:#FFB300;--text:#E6F1FF;--muted:#8FA6C2;
+    --mono:'Share Tech Mono','Consolas',monospace;--data:'Rajdhani',sans-serif}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:transparent;color:var(--text);font-family:var(--data)}
+  .wrap{position:relative;border:1px solid rgba(0,229,255,.2);background:rgba(6,14,28,.9);
+    padding:9px;clip-path:polygon(0 9px,9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%)}
+  .head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;
+    padding:0 2px 7px;font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase}
+  .title{color:var(--cyan)}
+  .meta{color:var(--muted);white-space:nowrap}
+  .stage{position:relative;overflow:hidden;background:#030812;aspect-ratio:__ASPECT__;user-select:none}
+  .stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block}
+  .bottom{position:absolute;inset:0;overflow:hidden}
+  .bottom::after{content:"";position:absolute;inset:0;border:1px solid rgba(0,229,255,.18);pointer-events:none}
+  .divider{position:absolute;top:0;bottom:0;width:1px;background:rgba(0,229,255,.85);
+    box-shadow:0 0 14px rgba(0,229,255,.75);pointer-events:none}
+  .knob{position:absolute;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;
+    border:1px solid var(--cyan);background:rgba(4,10,22,.9);box-shadow:0 0 18px rgba(0,229,255,.45);
+    display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;
+    color:var(--cyan);pointer-events:none}
+  .label{position:absolute;top:8px;padding:3px 7px;background:rgba(4,10,22,.82);
+    border:1px solid rgba(0,229,255,.3);font-family:var(--mono);font-size:8px;letter-spacing:.12em;
+    text-transform:uppercase;pointer-events:none}
+  .label.left{left:8px;color:var(--cyan)}
+  .label.right{right:8px;color:var(--text)}
+  .scan{position:absolute;left:0;right:0;top:-25%;height:18%;pointer-events:none;
+    background:linear-gradient(to bottom,transparent,rgba(0,229,255,.22),rgba(230,241,255,.5),transparent);
+    mix-blend-mode:screen;animation:scan 2.6s ease-in-out 1 both}
+  .scan.again{animation:scan 1.05s ease-in-out 1 both}
+  .controls{display:flex;align-items:center;gap:11px;margin-top:8px;font-family:var(--mono);
+    font-size:8.5px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+  input[type=range]{flex:1;accent-color:var(--cyan);background:transparent;height:18px}
+  input[type=range]:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+  .hint{white-space:nowrap;color:rgba(143,166,194,.78)}
+  .note{margin-top:7px;font-family:var(--mono);font-size:8px;line-height:1.5;color:var(--muted);
+    border-left:2px solid rgba(0,229,255,.3);padding-left:7px}
+  @keyframes scan{0%{transform:translateY(0);opacity:0}12%{opacity:1}88%{opacity:1}100%{transform:translateY(700%);opacity:0}}
+  .reduced *{animation:none!important;transition:none!important}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media (max-width:560px){.head{flex-direction:column;gap:2px}.meta{white-space:normal}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head"><span class="title" id="title"></span><span class="meta" id="meta"></span></div>
+  <div class="stage" id="stage">
+    <img id="top" alt="Reference image" />
+    <div class="bottom" id="bottom"><img id="under" alt="Aligned test image" /></div>
+    <div class="divider" id="divider"></div>
+    <div class="knob" id="knob" aria-hidden="true">&#8596;</div>
+    <span class="label left" id="leftLabel"></span>
+    <span class="label right" id="rightLabel"></span>
+    <span class="scan" id="scan" aria-hidden="true"></span>
+  </div>
+  <div class="controls">
+    <span>wipe</span>
+    <input id="slider" type="range" min="0" max="100" value="50" aria-label="Wipe between reference and aligned test image" />
+    <span class="hint" id="readout">50 / 50</span>
+  </div>
+  <div class="note">Swipe compares the reference canvas with the aligned test image. It shows alignment evidence, not a defect judgement.</div>
+</div>
+<script>
+const DATA = __DATA__;
+const REDUCED = __REDUCED__ || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (REDUCED) document.body.classList.add('reduced');
+document.getElementById('title').textContent = DATA.title || 'reference / aligned test';
+document.getElementById('meta').textContent = DATA.meta || '';
+document.getElementById('leftLabel').textContent = DATA.left_label || 'reference';
+document.getElementById('rightLabel').textContent = DATA.right_label || 'aligned test';
+document.getElementById('top').src = DATA.top_uri;
+document.getElementById('under').src = DATA.bottom_uri;
+
+const slider = document.getElementById('slider');
+const divider = document.getElementById('divider');
+const knob = document.getElementById('knob');
+const readout = document.getElementById('readout');
+const scan = document.getElementById('scan');
+const stage = document.getElementById('stage');
+
+function apply(){
+  const value = Number(slider.value);
+  const percent = Math.max(0, Math.min(100, value));
+  document.getElementById('bottom').style.clipPath = `inset(0 0 0 ${percent}%)`;
+  divider.style.left = percent + '%';
+  knob.style.left = percent + '%';
+  readout.textContent = `${percent} / ${100 - percent}`;
+}
+slider.addEventListener('input', apply);
+stage.addEventListener('pointerenter', () => {
+  if (REDUCED) return;
+  scan.classList.remove('again');
+  void scan.offsetWidth;
+  scan.classList.add('again');
+});
+apply();
+</script>
+</body>
+</html>

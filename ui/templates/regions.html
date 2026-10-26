@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap');
+  :root{--cyan:#00E5FF;--amber:#FFB300;--red:#FF5252;--text:#E6F1FF;--muted:#8FA6C2;
+    --mono:'Share Tech Mono','Consolas',monospace;--data:'Rajdhani',sans-serif}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:transparent;color:var(--text);font-family:var(--data)}
+  .wrap{border:1px solid rgba(0,229,255,.2);background:rgba(6,14,28,.9);padding:9px;
+    clip-path:polygon(0 9px,9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%)}
+  .head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:0 2px 7px;
+    font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase}
+  .title{color:var(--cyan)}
+  .meta{color:var(--muted)}
+  .stage{position:relative;overflow:hidden;background:#030812;aspect-ratio:__ASPECT__}
+  .stage img{display:block;width:100%;height:100%;object-fit:fill}
+  .stage::after{content:"";position:absolute;inset:0;pointer-events:none;
+    border:1px solid rgba(0,229,255,.16);box-shadow:inset 0 0 50px rgba(0,0,0,.45)}
+  .scan{position:absolute;left:0;right:0;top:-25%;height:18%;pointer-events:none;
+    background:linear-gradient(to bottom,transparent,rgba(0,229,255,.2),rgba(230,241,255,.45),transparent);
+    mix-blend-mode:screen;animation:scan 2.7s ease-in-out 1 both}
+  svg{position:absolute;inset:0;width:100%;height:100%}
+  .box{fill:rgba(0,229,255,.06);stroke:rgba(0,229,255,.85);stroke-width:1.4;
+    vector-effect:non-scaling-stroke;stroke-dasharray:5 4;cursor:pointer;transition:fill .18s ease,stroke .18s ease}
+  .box:hover,.box.sel{fill:rgba(255,179,0,.16);stroke:#FFB300;stroke-width:2;stroke-dasharray:none}
+  .box.sel{filter:drop-shadow(0 0 7px rgba(255,179,0,.8))}
+  .tag{pointer-events:none;transform-box:fill-box;transform-origin:0 100%;
+    animation:tagIn .34s cubic-bezier(.2,.9,.2,1) both;animation-delay:calc(var(--i) * 70ms)}
+  .tag .plate{fill:#FFB300;filter:drop-shadow(0 0 8px rgba(255,179,0,.45))}
+  .tag.sel .plate{fill:#00E5FF;filter:drop-shadow(0 0 9px rgba(0,229,255,.6))}
+  .tag text{font-family:'Share Tech Mono','Consolas',monospace;font-size:11px;font-weight:700;fill:#07101f;
+    letter-spacing:.05em;dominant-baseline:middle}
+  .list{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:5px;margin-top:8px}
+  .row{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:6px 8px;
+    background:rgba(7,16,31,.8);border:1px solid rgba(0,229,255,.14);color:var(--text);
+    font-family:var(--mono);font-size:9px;cursor:pointer;transition:border-color .16s ease,background .16s ease}
+  .row:hover,.row.sel{border-color:var(--cyan);background:rgba(0,229,255,.09)}
+  .row .id{min-width:26px;height:20px;display:inline-flex;align-items:center;justify-content:center;
+    background:#FFB300;color:#07101f;font-weight:700;font-size:9px}
+  .row.sel .id{background:var(--cyan)}
+  .row .area{color:var(--muted);font-size:8px}
+  .row .pos{margin-left:auto;color:rgba(143,166,194,.7);font-size:8px;white-space:nowrap}
+  .detail{margin-top:8px;padding:7px 9px;border-left:2px solid rgba(0,229,255,.4);
+    background:rgba(0,229,255,.04);font-family:var(--mono);font-size:8.5px;line-height:1.55;color:#c7dcef}
+  .empty{padding:26px 16px;text-align:center;border:1px dashed rgba(0,229,255,.22);background:rgba(7,16,31,.55)}
+  .empty b{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}
+  .empty span{display:block;margin-top:6px;font-size:12px;color:var(--muted)}
+  .note{margin-top:7px;font-family:var(--mono);font-size:8px;line-height:1.5;color:var(--muted);
+    border-left:2px solid rgba(0,229,255,.3);padding-left:7px}
+  @keyframes scan{0%{transform:translateY(0);opacity:0}12%{opacity:1}88%{opacity:1}100%{transform:translateY(700%);opacity:0}}
+  @keyframes tagIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+  .reduced *{animation:none!important;transition:none!important}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media (max-width:560px){.head{flex-direction:column;gap:2px}.list{grid-template-columns:1fr}.row .pos{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head"><span class="title">change-region overlay</span><span class="meta" id="meta"></span></div>
+  <div class="stage" id="stage">
+    <img id="image" alt="Aligned test image with change-region boxes" />
+    <svg id="overlay" role="group" aria-label="Change regions"></svg>
+    <span class="scan" aria-hidden="true"></span>
+  </div>
+  <div class="list" id="list" role="list"></div>
+  <div class="detail" id="detail"></div>
+  <div class="note">Boxes are connected components that survived the area and Lab-contrast filters. They are change regions, not defect labels.</div>
+</div>
+<script>
+const DATA = __DATA__;
+const REDUCED = __REDUCED__ || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (REDUCED) document.body.classList.add('reduced');
+const W = Math.max(1, Number(DATA.width));
+const H = Math.max(1, Number(DATA.height));
+const regions = DATA.regions || [];
+document.getElementById('image').src = DATA.image_uri;
+document.getElementById('meta').textContent = `${regions.length} region${regions.length === 1 ? '' : 's'} / min ${DATA.minimum_area} px`;
+
+const svg = document.getElementById('overlay');
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+svg.setAttribute('preserveAspectRatio', 'none');
+const list = document.getElementById('list');
+const detail = document.getElementById('detail');
+
+function describe(region, index){
+  return `R${index + 1} · x ${region.x}, y ${region.y} · ${region.width} x ${region.height} px · area ${region.area_pixels} px. Boxed by cv2.connectedComponentsWithStats after the Lab threshold and 3x3 open/close cleanup.`;
+}
+
+if (!regions.length){
+  document.getElementById('stage').style.display = 'none';
+  list.style.display = 'none';
+  detail.className = 'empty';
+  detail.innerHTML = `<b>no change regions survived</b><span>No connected component passed the ${DATA.minimum_area} px area and Lab-contrast filters. Change indications are below the reporting gate.</span>`;
+} else {
+  const boxes = [];
+  const tags = [];
+  regions.forEach((region, index) => {
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('class', 'box');
+    rect.setAttribute('x', region.x);
+    rect.setAttribute('y', region.y);
+    rect.setAttribute('width', region.width);
+    rect.setAttribute('height', region.height);
+    rect.setAttribute('tabindex', '0');
+    rect.setAttribute('role', 'button');
+    rect.setAttribute('aria-label', describe(region, index));
+    rect.addEventListener('click', () => select(index));
+    rect.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(index); }
+    });
+    svg.appendChild(rect);
+    boxes.push(rect);
+
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.setAttribute('class', 'tag');
+    group.style.setProperty('--i', index);
+    const plateWidth = 30;
+    const plateHeight = 16;
+    const px = Math.max(0, Math.min(W - plateWidth, Number(region.x)));
+    const py = Math.max(plateHeight + 2, Number(region.y) - 2);
+    const plate = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    plate.setAttribute('class', 'plate');
+    plate.setAttribute('x', px);
+    plate.setAttribute('y', py - plateHeight);
+    plate.setAttribute('width', plateWidth);
+    plate.setAttribute('height', plateHeight);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', px + 8);
+    text.setAttribute('y', py - plateHeight / 2);
+    text.textContent = `R${index + 1}`;
+    group.appendChild(plate);
+    group.appendChild(text);
+    svg.appendChild(group);
+    tags.push(group);
+
+    const row = document.createElement('button');
+    row.className = 'row';
+    row.setAttribute('role', 'listitem');
+    row.innerHTML = `<span class="id">R${index + 1}</span><span>${region.width} x ${region.height} px</span><span class="area">area ${region.area_pixels}</span><span class="pos">x${region.x} y${region.y}</span>`;
+    row.addEventListener('click', () => select(index));
+    list.appendChild(row);
+    region._row = row;
+  });
+}
+
+function select(index){
+  boxes.forEach((box, i) => box.classList.toggle('sel', i === index));
+  tags.forEach((tag, i) => tag.classList.toggle('sel', i === index));
+  regions.forEach((region, i) => region._row && region._row.classList.toggle('sel', i === index));
+  detail.textContent = describe(regions[index], index);
+}
+if (regions.length) select(0);
+</script>
+</body>
+</html>

@@ -212,5 +212,42 @@ class SampleManifestTests(unittest.TestCase):
             self.assertTrue(case["expectation"])
 
 
+class UIWordingTests(unittest.TestCase):
+    """The interface copy must never turn a comparison into a defect verdict."""
+
+    ROOT = Path(__file__).resolve().parent.parent
+
+    def ui_sources(self) -> list[Path]:
+        sources = [self.ROOT / "app.py"]
+        sources.extend(sorted((self.ROOT / "ui").glob("*.py")))
+        sources.extend(sorted((self.ROOT / "ui" / "templates").glob("*.html")))
+        return sources
+
+    def test_ui_never_asserts_a_defect_or_confirmed_anomaly(self) -> None:
+        forbidden = (
+            "defect detected",
+            "defect confirmed",
+            "defect found",
+            "anomaly detected",
+            "anomaly confirmed",
+            "anomaly found",
+            "confirmed defect",
+        )
+        combined = "\n".join(path.read_text(encoding="utf-8") for path in self.ui_sources()).lower()
+        for phrase in forbidden:
+            with self.subTest(phrase=phrase):
+                self.assertNotIn(phrase, combined)
+
+    def test_ui_keeps_the_honest_language_and_limitations_reachable(self) -> None:
+        combined = "\n".join(
+            path.read_text(encoding="utf-8") for path in self.ui_sources()
+        ).lower()
+        self.assertIn("change region", combined)
+        self.assertIn("uncalibrated", combined)
+        self.assertIn("limitations", combined)
+        self.assertIn("alignment rejected", combined)
+        self.assertIn("alignment ambiguous", combined)
+
+
 if __name__ == "__main__":
     unittest.main()

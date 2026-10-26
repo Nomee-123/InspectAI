@@ -112,6 +112,11 @@ def build_inspection_report(
             "feature_minimum_inliers": 8,
             "feature_minimum_inlier_ratio": 0.35,
             "feature_minimum_hull_fraction": 0.12,
+            "minimum_alignment_ncc": 0.80,
+            "alignment_ncc_gain_rule": (
+                "minimum gain = min(0.015 + 0.01 * model_complexity, "
+                "max(0.0005, 0.25 * (1 - current_ncc)))"
+            ),
             "minimum_overlap_fraction": 0.35,
             "photometric_minimum_relative_improvement": 0.08,
             "cross_check_agreement_pixels": 2.0,

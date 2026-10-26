@@ -82,10 +82,11 @@ class PhotometricResult:
 class AlignmentStep:
     """One inspectable step of the alignment process.
 
-    ``matrix`` is a 3x3 cumulative transform from the *original test image*
-    coordinates to this step's canvas.  Pixels of the aligned canvas are
-    sampled from the original test image with ``WARP_INVERSE_MAP`` semantics,
-    which is the convention used by ``cv2.findTransformECC``.
+    ``matrix`` is a 3x3 transform from *reference-canvas* coordinates to the
+    source image of this step.  For accepted steps it is cumulative and maps
+    canvas coordinates back to the original test image; pixels are sampled
+    from that source with ``WARP_INVERSE_MAP`` semantics, the convention used
+    by ``cv2.findTransformECC`` and ``cv2.phaseCorrelate``.
 
     ``keypoints_ref`` / ``keypoints_test`` contain matched ``(x, y, inlier)``
     tuples for feature-based steps, or ``None`` for other steps.

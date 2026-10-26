@@ -342,7 +342,7 @@ def main() -> int:
     passed = len(rows) - len(failures)
     print(
         f"\nSummary: {passed}/{len(rows)} cases passed in {elapsed:.2f}s "
-        f"({np.__version__=}, {cv2.__version__=})"
+        f"(numpy {np.__version__}, OpenCV {cv2.__version__})"
     )
 
     record = {
